@@ -1887,12 +1887,25 @@
 
             container.innerHTML = '';
 
-            if (!location.hotspots) return;
+            if (!location.hotspots) {
+                console.log('🔍 Nenhum hotspot encontrado para:', currentLocationId);
+                return;
+            }
+
+            console.log('🔍 Renderizando hotspots para:', currentLocationId);
+            console.log('📊 Total de hotspots:', location.hotspots.length);
 
             location.hotspots.forEach((hotspot, index) => {
+                console.log(`  [${index}] action: "${hotspot.action}", position:`, hotspot.position);
+
                 // Aceita tanto 'navigate' quanto 'navigation'
                 const isNavigationHotspot = (hotspot.action === 'navigate' || hotspot.action === 'navigation');
-                if (!isNavigationHotspot || !hotspot.position) return;
+                if (!isNavigationHotspot || !hotspot.position) {
+                    console.log(`  ❌ [${index}] IGNORADO - isNav: ${isNavigationHotspot}, hasPos: ${!!hotspot.position}`);
+                    return;
+                }
+
+                console.log(`  ✅ [${index}] RENDERIZANDO:`, hotspot.name);
 
                 const isSelected = index === selectedHotspotIndex;
 
