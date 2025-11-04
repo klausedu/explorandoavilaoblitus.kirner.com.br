@@ -146,6 +146,11 @@ class LocationScene extends Phaser.Scene {
         const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
 
         this.locationData.hotspots.forEach(hotspot => {
+            if (!hotspot.position) {
+                console.warn('Hotspot sem dados de posição:', hotspot);
+                return; // Pula este hotspot se não tiver posição
+            }
+
             const x = bgX + (hotspot.position.x / 100) * bgWidth;
             const y = bgY + (hotspot.position.y / 100) * bgHeight;
             const w = (hotspot.position.width / 100) * bgWidth;
@@ -207,7 +212,10 @@ class LocationScene extends Phaser.Scene {
 
         this.locationData.items.forEach(item => {
             if (gameStateManager.isItemCollected(item.id)) return;
-            if (!item.image || !item.position.x) return;
+            if (!item.image || !item.position) {
+                console.warn('Item sem dados de imagem ou posição:', item);
+                return;
+            }
 
             const x = bgX + (item.position.x / 100) * bgWidth;
             const y = bgY + (item.position.y / 100) * bgHeight;
