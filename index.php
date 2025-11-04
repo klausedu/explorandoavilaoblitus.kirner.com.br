@@ -226,7 +226,7 @@
 <body>
     <div class="container">
         <div class="logo">
-            <h1><⁄ Vila Abandonada</h1>
+            <h1>&#127962;&#65039; Vila Abandonada</h1>
             <p>Point & Click Adventure Game</p>
         </div>
 
@@ -245,8 +245,8 @@
         <div id="login-form" class="form-container active">
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label for="login-username">Usu·rio ou Email</label>
-                    <input type="text" id="login-username" placeholder="Digite seu usu·rio ou email" required>
+                    <label for="login-username">Usu√°rio ou Email</label>
+                    <input type="text" id="login-username" placeholder="Digite seu usu√°rio ou email" required>
                 </div>
                 <div class="form-group">
                     <label for="login-password">Senha</label>
@@ -260,8 +260,8 @@
         <div id="register-form" class="form-container">
             <form onsubmit="handleRegister(event)">
                 <div class="form-group">
-                    <label for="register-username">Usu·rio</label>
-                    <input type="text" id="register-username" placeholder="Escolha um nome de usu·rio" required minlength="3" maxlength="50">
+                    <label for="register-username">Usu√°rio</label>
+                    <input type="text" id="register-username" placeholder="Escolha um nome de usu√°rio" required minlength="3" maxlength="50">
                 </div>
                 <div class="form-group">
                     <label for="register-email">Email</label>
@@ -269,7 +269,7 @@
                 </div>
                 <div class="form-group">
                     <label for="register-password">Senha</label>
-                    <input type="password" id="register-password" placeholder="MÌnimo 6 caracteres" required minlength="6">
+                    <input type="password" id="register-password" placeholder="M√≠nimo 6 caracteres" required minlength="6">
                 </div>
                 <button type="submit" class="btn">Criar Conta</button>
             </form>
@@ -348,7 +348,7 @@
                     hideLoading();
                 }
             } catch (error) {
-                showMessage('Erro de conex„o. Verifique se o servidor est· rodando.', 'error');
+                showMessage('Erro de conex√£o. Verifique se o servidor est√° rodando.', 'error');
                 hideLoading();
             }
         }
@@ -387,7 +387,7 @@
                     hideLoading();
                 }
             } catch (error) {
-                showMessage('Erro de conex„o. Verifique se o servidor est· rodando.', 'error');
+                showMessage('Erro de conex√£o. Verifique se o servidor est√° rodando.', 'error');
                 hideLoading();
             }
         }
