@@ -396,6 +396,23 @@ class LocationScene extends Phaser.Scene {
     }
 
     navigateToLocation(targetLocationId, hotspot) {
+        console.log('🚀 navigateToLocation chamada:', targetLocationId);
+
+        if (!targetLocationId) {
+            console.error('❌ targetLocationId está vazio ou undefined!');
+            return;
+        }
+
+        // Verificar se o destino existe
+        const targetExists = databaseLoader.getLocation(targetLocationId);
+        if (!targetExists) {
+            console.error('❌ Localização de destino não encontrada:', targetLocationId);
+            uiManager.showNotification('Localização não encontrada: ' + targetLocationId);
+            return;
+        }
+
+        console.log('✅ Destino encontrado:', targetExists.name);
+
         const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
 
         const centerX = bgX + ((hotspot.position.x + hotspot.position.width / 2) / 100) * bgWidth;
@@ -413,20 +430,26 @@ class LocationScene extends Phaser.Scene {
             zoomLevel = 1; // Sem zoom
         }
 
+        console.log('🎬 Iniciando animação de zoom...');
+
         // Animação de pan e zoom
         this.cameras.main.pan(centerX, centerY, 700, 'Cubic.easeInOut');
         this.cameras.main.zoomTo(zoomLevel, 700, 'Cubic.easeInOut');
 
         // Fade out e trocar cena
         this.time.delayedCall(500, () => {
+            console.log('🎬 Fade out iniciado...');
             this.cameras.main.fadeOut(200, 0, 0, 0);
         });
 
         this.cameras.main.once('camerafadeoutcomplete', () => {
+            console.log('🎬 Fade out completo! Trocando para:', targetLocationId);
+
             // Atualizar estado
             gameStateManager.navigateToLocation(targetLocationId);
 
             // Reiniciar cena com nova location
+            console.log('🔄 Reiniciando cena...');
             this.scene.restart({ locationId: targetLocationId });
         });
     }
