@@ -157,7 +157,7 @@ class LocationScene extends Phaser.Scene {
             zone.setOrigin(0.5);
 
             // Label (nome do destino)
-            const label = this.add.text(x + w / 2, y + h + 10, hotspot.name, {
+            const label = this.add.text(x + w / 2, y + h + 10, hotspot.label, {
                 fontSize: '18px',
                 color: '#f0a500',
                 backgroundColor: '#000000',
