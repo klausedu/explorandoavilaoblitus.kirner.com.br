@@ -32,13 +32,19 @@ class BootScene extends Phaser.Scene {
         });
         loadingText.setOrigin(0.5);
 
-        // Load game data from database first
-        try {
-            await databaseLoader.loadGameData();
+        // Check if data was already loaded by config.js
+        if (!databaseLoader.isLoaded()) {
+            // Load game data from database (fallback if config.js didn't load)
+            try {
+                await databaseLoader.loadGameData();
+                loadingText.setText('Carregando imagens...');
+            } catch (error) {
+                console.error('Failed to load game data:', error);
+                loadingText.setText('Erro ao carregar dados!');
+            }
+        } else {
+            console.log('✓ Dados já carregados, pulando para imagens...');
             loadingText.setText('Carregando imagens...');
-        } catch (error) {
-            console.error('Failed to load game data:', error);
-            loadingText.setText('Erro ao carregar dados!');
         }
 
         // Progress bar background

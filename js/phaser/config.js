@@ -26,10 +26,20 @@ const config = {
 // Inicializar jogo
 let game;
 
-function initGame() {
-    console.log('📋 Locações carregadas:', Object.keys(GAME_MAP).length);
+async function initGame() {
+    console.log('⏳ Aguardando carregamento do banco de dados...');
 
-    // Inicializar Phaser
+    // PRIMEIRO: Carregar dados do banco de dados
+    try {
+        await databaseLoader.loadGameData();
+        console.log('✅ Dados carregados do banco!');
+        console.log('📋 Locações carregadas:', Object.keys(GAME_MAP).length);
+    } catch (error) {
+        console.error('❌ Erro ao carregar do banco, usando map.js como fallback');
+        console.log('📋 Locações carregadas (fallback):', Object.keys(GAME_MAP).length);
+    }
+
+    // DEPOIS: Inicializar Phaser
     game = new Phaser.Game(config);
     console.log('✓ Jogo inicializado');
 }
