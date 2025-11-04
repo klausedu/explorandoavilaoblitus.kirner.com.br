@@ -19,8 +19,21 @@ class DatabaseLoader {
         try {
             console.log('🔄 Loading game data from database...');
 
-            const response = await fetch('api/locations/list.php?t=' + new Date().getTime());
+            // Strong cache-busting
+            const cacheBuster = 'v=' + Date.now() + '&r=' + Math.random();
+            const response = await fetch('api/locations/list.php?' + cacheBuster, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+
+            console.log('📡 Response status:', response.status);
+
             const data = await response.json();
+            console.log('📥 Data received:', data);
 
             if (!data.success) {
                 throw new Error(data.message || 'Failed to load game data');
@@ -37,8 +50,9 @@ class DatabaseLoader {
 
             this.loaded = true;
 
-            console.log(`✓ Loaded ${this.locations.length} locations from database`);
-            console.log('Game Map:', this.gameMap);
+            console.log(`✅ Loaded ${this.locations.length} locations from database`);
+            console.log('📊 Game Map:', this.gameMap);
+            console.log('📊 Total hotspots:', this.locations.reduce((sum, loc) => sum + (loc.hotspots?.length || 0), 0));
 
             return this.gameMap;
 
