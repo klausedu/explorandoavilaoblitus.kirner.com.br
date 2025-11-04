@@ -1890,7 +1890,9 @@
             if (!location.hotspots) return;
 
             location.hotspots.forEach((hotspot, index) => {
-                if (hotspot.action !== 'navigate' || !hotspot.position) return;
+                // Aceita tanto 'navigate' quanto 'navigation'
+                const isNavigationHotspot = (hotspot.action === 'navigate' || hotspot.action === 'navigation');
+                if (!isNavigationHotspot || !hotspot.position) return;
 
                 const isSelected = index === selectedHotspotIndex;
 
@@ -3070,20 +3072,26 @@ if (typeof module !== 'undefined' && module.exports) {
 
                 locations.forEach(loc => {
                     // Convert hotspots from DB format to editor format
-                    const hotspots = (loc.hotspots || []).map(h => ({
-                        id: 'hotspot_' + Date.now() + Math.random(),
-                        name: h.label || 'Hotspot',
-                        action: h.type || 'navigate',
-                        target: h.target_location || '',
-                        position: {
-                            x: parseFloat(h.x) || 0,
-                            y: parseFloat(h.y) || 0,
-                            width: parseFloat(h.width) || 10,
-                            height: parseFloat(h.height) || 10
-                        },
-                        arrowDirection: 'up',
-                        item: h.item_id || null
-                    }));
+                    const hotspots = (loc.hotspots || []).map(h => {
+                        // Padronizar: 'navigation' do banco vira 'navigate' no editor
+                        let action = h.type || 'navigate';
+                        if (action === 'navigation') action = 'navigate';
+
+                        return {
+                            id: 'hotspot_' + Date.now() + Math.random(),
+                            name: h.label || 'Hotspot',
+                            action: action,
+                            target: h.target_location || '',
+                            position: {
+                                x: parseFloat(h.x) || 0,
+                                y: parseFloat(h.y) || 0,
+                                width: parseFloat(h.width) || 10,
+                                height: parseFloat(h.height) || 10
+                            },
+                            arrowDirection: 'up',
+                            item: h.item_id || null
+                        };
+                    });
 
                     gameLocations[loc.id] = {
                         id: loc.id,
