@@ -3195,12 +3195,28 @@ if (typeof module !== 'undefined' && module.exports) {
                         item_id: h.item || null
                     }));
 
+                    // IMPORTANTE: Converter items para hotspots do tipo 'item'
+                    const itemHotspots = (loc.items || []).map(item => ({
+                        type: 'item',
+                        x: item.position?.x || 50,
+                        y: item.position?.y || 50,
+                        width: item.size?.width || 5,
+                        height: item.size?.height || 5,
+                        label: item.name || item.id,
+                        description: item.description || '',
+                        target_location: null,
+                        item_id: item.id
+                    }));
+
+                    // Combinar hotspots de navegação + items
+                    const allHotspots = [...hotspots, ...itemHotspots];
+
                     allLocations.push({
                         id: loc.id,
                         name: loc.name,
                         description: loc.description || 'Descrição...',
                         background_image: loc.image || '',
-                        hotspots: hotspots
+                        hotspots: allHotspots
                     });
                 }
 
