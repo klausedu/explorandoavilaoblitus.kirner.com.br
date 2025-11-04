@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS game_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    current_location VARCHAR(50) NOT NULL DEFAULT 'forest_entrance',
+    current_location VARCHAR(50) NOT NULL DEFAULT 'floresta',
     visited_locations TEXT,  -- JSON array of visited location IDs
     collected_items TEXT,    -- JSON array of collected item IDs
     solved_puzzles TEXT,     -- JSON array of solved puzzle IDs

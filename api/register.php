@@ -56,7 +56,7 @@ try {
     // Initialize game progress
     $stmt = $pdo->prepare("
         INSERT INTO game_progress (user_id, current_location, visited_locations, collected_items, solved_puzzles, inventory)
-        VALUES (?, 'forest_entrance', '[]', '[]', '[]', '{}')
+        VALUES (?, 'floresta', '[]', '[]', '[]', '{}')
     ");
     $stmt->execute([$userId]);
 

@@ -13,7 +13,11 @@
       "Bash(start index.php)",
       "Bash(git init:*)",
       "Bash(apiconfig.example.php)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

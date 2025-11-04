@@ -35,12 +35,12 @@ try {
         // Initialize progress if not exists
         $stmt = $pdo->prepare("
             INSERT INTO game_progress (user_id, current_location, visited_locations, collected_items, solved_puzzles, inventory)
-            VALUES (?, 'forest_entrance', '[]', '[]', '[]', '{}')
+            VALUES (?, 'floresta', '[]', '[]', '[]', '{}')
         ");
         $stmt->execute([$session['user_id']]);
 
         $progress = [
-            'current_location' => 'forest_entrance',
+            'current_location' => 'floresta',
             'visited_locations' => '[]',
             'collected_items' => '[]',
             'solved_puzzles' => '[]',
