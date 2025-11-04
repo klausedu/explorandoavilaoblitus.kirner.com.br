@@ -77,7 +77,8 @@ class DatabaseLoader {
                 name: location.name,
                 description: location.description,
                 background: location.background_image,
-                hotspots: this.convertHotspots(location.hotspots)
+                hotspots: this.convertHotspots(location.hotspots),
+                items: location.items
             };
         }
 
