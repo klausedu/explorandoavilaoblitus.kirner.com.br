@@ -10,6 +10,9 @@ header('Access-Control-Allow-Methods: GET');
 
 require_once '../config.php';
 
+// Get database connection
+$pdo = getDBConnection();
+
 try {
     // Get all locations
     $stmt = $pdo->query("

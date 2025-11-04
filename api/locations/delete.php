@@ -11,6 +11,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../config.php';
 
+// Get database connection
+$pdo = getDBConnection();
+
 // Get location ID from query or JSON body
 $locationId = $_GET['id'] ?? null;
 

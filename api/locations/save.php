@@ -11,6 +11,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../config.php';
 
+// Get database connection
+$pdo = getDBConnection();
+
 // Get JSON input
 $input = json_decode(file_get_contents('php://input'), true);
 
