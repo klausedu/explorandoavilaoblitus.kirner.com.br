@@ -1,3 +1,4 @@
+console.log('GEMINI_TEST: Config file loaded!');
 /**
  * Phaser Game Configuration
  * Configuração principal e inicialização do jogo
