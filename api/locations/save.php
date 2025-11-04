@@ -134,13 +134,4 @@ try {
     sendResponse(false, null, 'Database error: ' . $e->getMessage(), 500);
 }
 
-function sendResponse($success, $data = null, $message = '', $httpCode = 200) {
-    http_response_code($httpCode);
-    echo json_encode([
-        'success' => $success,
-        'data' => $data,
-        'message' => $message,
-        'timestamp' => time()
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+
