@@ -3,15 +3,6 @@
 # Configuration files with sensitive data
 api/config.php
 
-# Image files (usually too large for git)
-images/*.jpg
-images/*.png
-images/*.jpeg
-images/*.gif
-
-# But keep the folder structure
-!images/.gitkeep
-
 # Editor and IDE files
 .vscode/
 .idea/
