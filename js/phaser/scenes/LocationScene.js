@@ -21,7 +21,7 @@ class LocationScene extends Phaser.Scene {
 
     create() {
         // Obter dados da location
-        this.locationData = getLocation(this.currentLocation);
+        this.locationData = databaseLoader.getLocation(this.currentLocation);
 
         if (!this.locationData) {
             console.error('Location not found:', this.currentLocation);
