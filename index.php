@@ -13,12 +13,29 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: url('images/capa.png') center center / cover no-repeat fixed;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             color: #fff;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.85);
+            z-index: 0;
+        }
+
+        body > * {
+            position: relative;
+            z-index: 1;
         }
 
         .container {
@@ -279,7 +296,8 @@
     <script>
         // Check if user is already logged in
         if (localStorage.getItem('session_token')) {
-            window.location.href = 'game-phaser.html';
+            const isAdmin = localStorage.getItem('is_admin') === 'true';
+            window.location.href = isAdmin ? 'admin-panel.html' : 'game-phaser.html';
         }
 
         function switchTab(tab) {
@@ -338,10 +356,15 @@
                     localStorage.setItem('user_id', data.data.user_id);
                     localStorage.setItem('username', data.data.username);
                     localStorage.setItem('email', data.data.email);
+                    localStorage.setItem('is_admin', data.data.is_admin);
 
-                    showMessage('Login realizado! Redirecionando...', 'success');
+                    // Redirect based on user type
+                    const redirectUrl = data.data.is_admin ? 'admin-panel.html' : 'game-phaser.html';
+                    const message = data.data.is_admin ? 'Login Admin realizado! Redirecionando...' : 'Login realizado! Redirecionando...';
+
+                    showMessage(message, 'success');
                     setTimeout(() => {
-                        window.location.href = 'game-phaser.html';
+                        window.location.href = redirectUrl;
                     }, 1000);
                 } else {
                     showMessage(data.message || 'Erro ao fazer login', 'error');
@@ -377,6 +400,7 @@
                     localStorage.setItem('user_id', data.data.user_id);
                     localStorage.setItem('username', data.data.username);
                     localStorage.setItem('email', data.data.email);
+                    localStorage.setItem('is_admin', data.data.is_admin);
 
                     showMessage('Conta criada! Redirecionando...', 'success');
                     setTimeout(() => {

@@ -22,7 +22,7 @@ try {
 
     // Get user by username or email
     $stmt = $pdo->prepare("
-        SELECT id, username, email, password_hash
+        SELECT id, username, email, password_hash, is_admin
         FROM users
         WHERE username = ? OR email = ?
     ");
@@ -59,6 +59,7 @@ try {
         'user_id' => $user['id'],
         'username' => $user['username'],
         'email' => $user['email'],
+        'is_admin' => (bool)$user['is_admin'],
         'session_token' => $sessionToken
     ], 'Login successful');
 

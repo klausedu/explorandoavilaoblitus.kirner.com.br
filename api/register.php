@@ -74,6 +74,7 @@ try {
         'user_id' => $userId,
         'username' => $username,
         'email' => $email,
+        'is_admin' => false,
         'session_token' => $sessionToken
     ], 'Account created successfully');
 

@@ -525,6 +525,20 @@
     </style>
 </head>
 <body>
+    <!-- Admin Authentication Check -->
+    <script>
+        // Check if user is admin
+        const isAdmin = localStorage.getItem('is_admin') === 'true';
+        const username = localStorage.getItem('username');
+
+        if (!isAdmin) {
+            alert('❌ Acesso Negado\n\nApenas administradores podem acessar o Editor.\n\nVocê será redirecionado para o jogo.');
+            window.location.href = 'game-phaser.html';
+        } else {
+            console.log('✓ Admin access granted:', username);
+        }
+    </script>
+
     <div class="editor-container">
         <!-- Left Sidebar -->
         <div class="locations-sidebar">
