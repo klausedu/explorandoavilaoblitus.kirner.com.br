@@ -52,12 +52,23 @@ class UIManager {
             pointer-events: auto;
         `;
 
+        // Get user info from localStorage
+        const username = localStorage.getItem('username') || 'Jogador';
+        const isAdmin = localStorage.getItem('is_admin') === 'true';
+        const adminBadge = isAdmin ? '<span style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px;">ADMIN</span>' : '';
+
         topBar.innerHTML = `
-            <div style="color: #f0a500; font-size: 18px; font-weight: 600;">Vila Abandonada</div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="color: #f0a500; font-size: 18px; font-weight: 600;">Vila Abandonada</div>
+                <div style="color: #ccc; font-size: 14px; display: flex; align-items: center;">
+                    👤 <span id="username-display" style="margin-left: 5px;">${username}</span>${adminBadge}
+                </div>
+            </div>
             <div style="display: flex; gap: 10px;">
                 <button id="btn-inventory" class="phaser-btn" title="Inventário">🎒</button>
                 <button id="btn-save" class="phaser-btn" title="Salvar">💾</button>
                 <button id="btn-reset" class="phaser-btn" title="Resetar">🔄</button>
+                <button id="btn-logout" class="phaser-btn phaser-btn-logout" title="Sair">🚪</button>
             </div>
         `;
 
@@ -80,6 +91,14 @@ class UIManager {
             .phaser-btn:hover {
                 background: rgba(240, 165, 0, 0.4);
                 transform: scale(1.1);
+            }
+            .phaser-btn-logout {
+                background: rgba(244, 67, 54, 0.2);
+                border-color: #f44336;
+                color: #f44336;
+            }
+            .phaser-btn-logout:hover {
+                background: rgba(244, 67, 54, 0.4);
             }
             .phaser-overlay {
                 position: absolute;
@@ -156,6 +175,7 @@ class UIManager {
         document.getElementById('btn-inventory').addEventListener('click', () => this.toggleInventory());
         document.getElementById('btn-save').addEventListener('click', () => this.saveGame());
         document.getElementById('btn-reset').addEventListener('click', () => this.resetGame());
+        document.getElementById('btn-logout').addEventListener('click', () => this.logout());
     }
 
     createNotificationArea(container) {
@@ -294,6 +314,20 @@ class UIManager {
             gameStateManager.reset();
             this.showNotification('✓ Jogo resetado!');
             window.location.reload();
+        }
+    }
+
+    /**
+     * Logout
+     */
+    logout() {
+        if (confirm('Deseja realmente sair do jogo?')) {
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            localStorage.removeItem('is_admin');
+            window.location.href = 'index.php';
         }
     }
 }

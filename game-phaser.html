@@ -29,74 +29,9 @@
             display: block;
             margin: 0 auto;
         }
-
-        /* Logout Button */
-        #logout-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 10000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            pointer-events: auto;
-        }
-
-        #logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-        }
-
-        #logout-btn:active {
-            transform: translateY(0);
-        }
-
-        #user-info {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 10px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            color: white;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 10000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            pointer-events: none;
-        }
-
-        #user-info .username {
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
-    <!-- User Info Display -->
-    <div id="user-info">
-        <span>👤</span>
-        <span class="username" id="username-display"></span>
-    </div>
-
-    <!-- Logout Button -->
-    <button id="logout-btn" onclick="logout()">
-        <span>🚪</span>
-        <span>Sair</span>
-    </button>
-
     <div id="game-container"></div>
 
     <!-- Phaser 3 CDN -->
@@ -123,20 +58,8 @@
             // Not logged in, redirect to login page
             window.location.href = 'index.php';
         } else {
-            // Show username in console and UI
+            // Show username in console
             console.log('✓ Logged in as:', username);
-            document.getElementById('username-display').textContent = username;
-        }
-
-        // Logout function
-        function logout() {
-            if (confirm('Deseja realmente sair do jogo?')) {
-                localStorage.removeItem('session_token');
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('username');
-                localStorage.removeItem('email');
-                window.location.href = 'index.php';
-            }
         }
     </script>
 
