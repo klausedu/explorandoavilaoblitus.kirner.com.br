@@ -574,23 +574,23 @@
                 <div class="tab-panel active" id="tab-basic">
                     <div class="form-group">
                         <label>ID do Local</label>
-                        <input type="text" id="edit-id" placeholder="ex: forest_entrance">
+                        <input type="text" id="edit-id" placeholder="ex: forest_entrance" onchange="saveBasicInfo()">
                         <div class="form-hint">Identificador único (sem espaços, use underscore)</div>
                     </div>
 
                     <div class="form-group">
                         <label>Nome do Local</label>
-                        <input type="text" id="edit-name" placeholder="ex: Entrada da Floresta">
+                        <input type="text" id="edit-name" placeholder="ex: Entrada da Floresta" onchange="saveBasicInfo()">
                     </div>
 
                     <div class="form-group">
                         <label>Descrição</label>
-                        <textarea id="edit-description" placeholder="Descreva o local..."></textarea>
+                        <textarea id="edit-description" placeholder="Descreva o local..." onchange="saveBasicInfo()"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label>Imagem do Local</label>
-                        <input type="text" id="edit-image" placeholder="ex: images/forest_entrance.jpg">
+                        <input type="text" id="edit-image" placeholder="ex: images/forest_entrance.jpg" onchange="saveBasicInfo()">
                         <div class="form-hint">Caminho relativo para a imagem</div>
 
                         <div style="margin-top: 10px;">
@@ -604,7 +604,7 @@
                     </div>
 
                     <div class="checkbox-group">
-                        <input type="checkbox" id="edit-unlocked">
+                        <input type="checkbox" id="edit-unlocked" onchange="saveBasicInfo()">
                         <label for="edit-unlocked">Local desbloqueado no início do jogo</label>
                     </div>
 
@@ -3131,6 +3131,12 @@ if (typeof module !== 'undefined' && module.exports) {
             console.log('🔔 FUNÇÃO syncToDatabase() CHAMADA!');
             console.log('📊 gameLocations:', gameLocations);
             console.log('📊 Total de localizações:', Object.keys(gameLocations).length);
+
+            // IMPORTANTE: Salvar informações básicas da localização atual ANTES de sincronizar
+            if (currentLocationId) {
+                console.log('💾 Salvando informações da localização atual antes de sincronizar...');
+                saveBasicInfo();
+            }
 
             if (Object.keys(gameLocations).length === 0) {
                 alert('❌ Nenhuma localização para salvar! gameLocations está vazio.');
