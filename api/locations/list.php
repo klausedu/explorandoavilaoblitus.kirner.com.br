@@ -61,6 +61,7 @@ try {
     ");
 
     $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    error_log("📋 LIST API - Encontradas " . count($locations) . " localizações no banco");
 
     // For each location, get its hotspots
     foreach ($locations as &$location) {
@@ -83,6 +84,7 @@ try {
         ");
         $hotspotStmt->execute([$location['id']]);
         $location['hotspots'] = $hotspotStmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("  └─ Localização {$location['id']}: " . count($location['hotspots']) . " hotspots");
 
         // Convert numeric strings to numbers
         foreach ($location['hotspots'] as &$hotspot) {
@@ -106,6 +108,7 @@ try {
     $connections = $connStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Success response
+    error_log("✅ LIST API - Retornando " . count($locations) . " localizações com sucesso");
     sendResponse(true, [
         'locations' => $locations,
         'connections' => $connections,

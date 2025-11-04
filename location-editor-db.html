@@ -827,8 +827,7 @@
 
         // Initialize
         window.onload = async function() {
-            initializeLocationOrder();
-            renderLocationsList();
+            console.log('🔧 Iniciando editor...');
             await loadFromDatabase(true); // Carrega automaticamente do banco
         };
 
@@ -886,6 +885,12 @@
 
         // Render locations list
         function renderLocationsList() {
+            console.log('🎨 Renderizando lista de localizações:', {
+                total: Object.keys(gameLocations).length,
+                locationOrder: locationOrder,
+                locations: Object.keys(gameLocations)
+            });
+
             const list = document.getElementById('locationsList');
             list.innerHTML = '';
 
@@ -3058,6 +3063,8 @@ if (typeof module !== 'undefined' && module.exports) {
                 }
 
                 // Convert API format to editor format
+                console.log('📥 Dados recebidos do banco:', locations);
+
                 gameLocations = {};
                 locationOrder = [];
 
@@ -3125,6 +3132,7 @@ if (typeof module !== 'undefined' && module.exports) {
                 return;
             }
 
+            console.log('💾 Iniciando sincronização com banco...', gameLocations);
             showToast('☁️ Sincronizando com banco...', 'info');
 
             let successCount = 0;
@@ -3155,18 +3163,29 @@ if (typeof module !== 'undefined' && module.exports) {
                         hotspots: hotspots
                     };
 
+                    console.log(`📤 Salvando ${locationId}:`, payload);
+
                     const response = await fetch('api/locations/save.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
+                    if (!response.ok) {
+                        const text = await response.text();
+                        console.error(`❌ HTTP ${response.status} em ${locationId}:`, text);
+                        errorCount++;
+                        continue;
+                    }
+
                     const result = await response.json();
+                    console.log(`📨 Resposta da API para ${locationId}:`, result);
 
                     if (result.success) {
+                        console.log(`✅ ${locationId} salvo com sucesso!`);
                         successCount++;
                     } else {
-                        console.error(`Erro em ${locationId}:`, result.message);
+                        console.error(`❌ Erro em ${locationId}:`, result.message);
                         errorCount++;
                     }
 

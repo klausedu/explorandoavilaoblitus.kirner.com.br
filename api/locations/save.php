@@ -17,22 +17,25 @@ $pdo = getDBConnection();
 // Get JSON input
 $input = json_decode(file_get_contents('php://input'), true);
 
+// Debug log
+error_log("📥 SAVE API - Recebendo dados: " . json_encode($input));
+
 if (!$input) {
     sendResponse(false, null, 'Invalid JSON data', 400);
 }
 
-// Validate required fields
-$requiredFields = ['id', 'name', 'description', 'background_image'];
-foreach ($requiredFields as $field) {
-    if (empty($input[$field])) {
-        sendResponse(false, null, "Field '$field' is required", 400);
-    }
+// Validate required fields (apenas id e name são obrigatórios)
+if (!isset($input['id']) || trim($input['id']) === '') {
+    sendResponse(false, null, "Field 'id' is required", 400);
+}
+if (!isset($input['name']) || trim($input['name']) === '') {
+    sendResponse(false, null, "Field 'name' is required", 400);
 }
 
 $locationId = $input['id'];
 $name = $input['name'];
-$description = $input['description'];
-$backgroundImage = $input['background_image'];
+$description = $input['description'] ?? '';
+$backgroundImage = $input['background_image'] ?? '';
 $hotspots = $input['hotspots'] ?? [];
 $userId = $input['user_id'] ?? null; // Optional: track who created/updated
 
@@ -47,6 +50,7 @@ try {
 
     if ($exists) {
         // Update existing location
+        error_log("✏️ SAVE API - Atualizando localização existente: $locationId");
         $stmt = $pdo->prepare("
             UPDATE locations
             SET name = ?,
@@ -59,6 +63,7 @@ try {
         $message = 'Location updated successfully';
     } else {
         // Insert new location
+        error_log("➕ SAVE API - Criando nova localização: $locationId");
         $stmt = $pdo->prepare("
             INSERT INTO locations (id, name, description, background_image, created_by)
             VALUES (?, ?, ?, ?, ?)
@@ -70,9 +75,11 @@ try {
     // Delete existing hotspots for this location
     $deleteStmt = $pdo->prepare("DELETE FROM hotspots WHERE location_id = ?");
     $deleteStmt->execute([$locationId]);
+    error_log("🗑️ SAVE API - Hotspots antigos deletados para: $locationId");
 
     // Insert new hotspots
     if (!empty($hotspots)) {
+        error_log("💾 SAVE API - Salvando " . count($hotspots) . " hotspots para: $locationId");
         $hotspotStmt = $pdo->prepare("
             INSERT INTO hotspots
             (location_id, type, x, y, width, height, label, description, target_location, item_id, interaction_data)
@@ -125,6 +132,7 @@ try {
 
     // Commit transaction
     $pdo->commit();
+    error_log("✅ SAVE API - Transação commitada com sucesso para: $locationId");
 
     sendResponse(true, ['id' => $locationId], $message);
 
