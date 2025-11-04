@@ -36,6 +36,7 @@ try {
 
     $successCount = 0;
     $hotspotCount = 0;
+    $itemCount = 0;
 
     // Prepared statements (reutilizáveis)
     $locationStmt = $pdo->prepare("
@@ -54,6 +55,17 @@ try {
         INSERT INTO hotspots
         (location_id, type, x, y, width, height, label, description, target_location, item_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    $itemStmt = $pdo->prepare("
+        INSERT INTO items (id, name, description, image, type)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            description = VALUES(description),
+            image = VALUES(image),
+            type = VALUES(type),
+            updated_at = CURRENT_TIMESTAMP
     ");
 
     // Processar todas as localizações
@@ -88,6 +100,18 @@ try {
                 $targetLocation = $hotspot['target_location'] ?? null;
                 $itemId = $hotspot['item_id'] ?? null;
 
+                // Se é hotspot de item, garantir que o item existe na tabela items
+                if ($type === 'item' && $itemId) {
+                    $itemStmt->execute([
+                        $itemId,
+                        $label ?: $itemId,
+                        $description ?: '',
+                        '', // image vazio por enquanto
+                        'collectible' // type padrão
+                    ]);
+                    $itemCount++;
+                }
+
                 $hotspotStmt->execute([
                     $locationId,
                     $type,
@@ -108,12 +132,13 @@ try {
     // Commit tudo de uma vez!
     $pdo->commit();
 
-    error_log("✅ BULK SAVE - Sucesso! $successCount localizações, $hotspotCount hotspots");
+    error_log("✅ BULK SAVE - Sucesso! $successCount localizações, $hotspotCount hotspots, $itemCount items");
 
     sendResponse(true, [
         'locations' => $successCount,
-        'hotspots' => $hotspotCount
-    ], "Saved $successCount locations and $hotspotCount hotspots successfully");
+        'hotspots' => $hotspotCount,
+        'items' => $itemCount
+    ], "Saved $successCount locations, $hotspotCount hotspots and $itemCount items successfully");
 
 } catch (PDOException $e) {
     // Rollback em caso de erro
