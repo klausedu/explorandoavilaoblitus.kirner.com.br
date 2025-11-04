@@ -93,6 +93,9 @@ class DatabaseLoader {
      */
     convertHotspots(dbHotspots) {
         if (!dbHotspots) return [];
+
+        console.log(`🔍 Convertendo ${dbHotspots.length} hotspots do banco...`);
+
         return dbHotspots.map(h => {
             const hotspot = {
                 id: h.id,
@@ -108,13 +111,16 @@ class DatabaseLoader {
             };
 
             // Add type-specific properties
-            if (h.type === 'navigate' && h.target_location) {
-                hotspot.target = h.target_location; // Map to 'target'
+            // Banco usa 'navigation', editor usa 'navigate'
+            if ((h.type === 'navigate' || h.type === 'navigation') && h.target_location) {
+                hotspot.targetLocation = h.target_location; // LocationScene espera targetLocation
             } else if (h.type === 'item' && h.item_id) {
                 hotspot.itemId = h.item_id;
             } else if (h.type === 'puzzle' && h.puzzle_id) {
                 hotspot.puzzleId = h.puzzle_id;
             }
+
+            console.log(`  ✅ Hotspot: "${hotspot.label}" at (${hotspot.position.x}, ${hotspot.position.y}) → targetLocation: ${hotspot.targetLocation}`);
 
             return hotspot;
         });
