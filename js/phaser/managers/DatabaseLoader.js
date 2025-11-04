@@ -19,7 +19,7 @@ class DatabaseLoader {
         try {
             console.log('🔄 Loading game data from database...');
 
-            const response = await fetch('api/locations/list.php');
+            const response = await fetch('api/locations/list.php?t=' + new Date().getTime());
             const data = await response.json();
 
             if (!data.success) {
