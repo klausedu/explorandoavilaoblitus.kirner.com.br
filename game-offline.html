@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vila Abandonada - Modo Offline</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="game-page">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="user-info">
+            <span id="usernameDisplay">Modo Teste</span>
+        </div>
+        <div class="game-title-small">Vila Abandonada</div>
+        <div class="game-controls">
+            <button id="connectionsBtn" class="btn-icon" title="Ver Conexões">🔗</button>
+            <button id="saveBtn" class="btn-icon" title="Salvar Progresso">💾</button>
+            <button id="mapBtn" class="btn-icon" title="Abrir Mapa">🗺️</button>
+            <button id="inventoryBtn" class="btn-icon" title="Inventário">🎒</button>
+            <button id="resetBtn" class="btn-icon" title="Resetar Jogo">🔄</button>
+        </div>
+    </div>
+
+    <!-- Main Game Area -->
+    <div class="game-container">
+        <!-- Game Canvas/View -->
+        <div class="game-view" id="gameView">
+            <img id="locationImage" src="" alt="Local atual" class="location-image">
+
+            <!-- Interactive Hotspots -->
+            <div id="hotspots" style="perspective: 1000px;"></div>
+
+            <!-- Location Info -->
+            <div class="location-info">
+                <h2 id="locationName">Carregando...</h2>
+                <p id="locationDescription"></p>
+            </div>
+        </div>
+
+        <!-- Map Overlay -->
+        <div id="mapOverlay" class="overlay" style="display: none;">
+            <div class="overlay-content map-content">
+                <h2>Mapa da Vila</h2>
+                <button class="close-btn" id="closeMapBtn">✕</button>
+                <div id="mapContainer" class="map-grid"></div>
+            </div>
+        </div>
+
+        <!-- Inventory Overlay -->
+        <div id="inventoryOverlay" class="overlay" style="display: none;">
+            <div class="overlay-content inventory-content">
+                <h2>Inventário</h2>
+                <button class="close-btn" id="closeInventoryBtn">✕</button>
+                <div id="inventoryGrid" class="inventory-grid"></div>
+                <div id="inventoryEmpty" class="empty-message">
+                    Seu inventário está vazio
+                </div>
+            </div>
+        </div>
+
+        <!-- Puzzle Overlay -->
+        <div id="puzzleOverlay" class="overlay" style="display: none;">
+            <div class="overlay-content puzzle-content">
+                <h2 id="puzzleTitle">Enigma</h2>
+                <button class="close-btn" id="closePuzzleBtn">✕</button>
+                <div id="puzzleContainer"></div>
+            </div>
+        </div>
+
+        <!-- Connections Overlay -->
+        <div id="connectionsOverlay" class="overlay" style="display: none;">
+            <div class="overlay-content connections-content">
+                <h2>Conexões deste Local</h2>
+                <button class="close-btn" id="closeConnectionsBtn">✕</button>
+                <div id="connectionsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Item Collection Notification -->
+        <div id="itemNotification" class="notification" style="display: none;">
+            <span id="notificationText"></span>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Carregando...</p>
+        </div>
+    </div>
+
+    <script>
+        // Arquivo de mapa embutido para evitar problemas de cache e carregamento.
+
+        const GAME_MAP = {
+    "floresta": {
+        "id": "floresta",
+        "name": "Floresta",
+        "description": "Descrição do local...",
+        "image": "images/floresta.jpg",
+        "unlocked": true,
+        "connections": [
+            "portao_entrada"
+        ],
+        "hotspots": [
+            {
+                "id": "hotspot_1761880449282",
+                "name": "Portão",
+                "action": "navigate",
+                "target": "portao_entrada",
+                "position": {
+                    "x": 34.85714285714286,
+                    "y": 51.65714285714286,
+                    "width": 32.457142857142856,
+                    "height": 17.142857142857142
+                },
+                "arrowDirection": "up"
+            }
+        ],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "portao_entrada": {
+        "id": "portao_entrada",
+        "name": "Portao de entrada",
+        "description": "Descrição do local...",
+        "image": "images/portao_entrada.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_vila",
+            "floresta",
+            "florest"
+        ],
+        "hotspots": [
+            {
+                "id": "hotspot_1761881974352",
+                "name": "Portão Aberto",
+                "action": "navigate",
+                "target": "rua_vila",
+                "position": {
+                    "x": 26.171428571428574,
+                    "y": 51.42857142857142,
+                    "width": 50.74285714285715,
+                    "height": 34.05714285714286
+                },
+                "arrowDirection": "up"
+            },
+            {
+                "id": "hotspot_1761882044866",
+                "name": "Voltar",
+                "action": "navigate",
+                "target": "floresta",
+                "position": {
+                    "x": 1.2571428571428571,
+                    "y": 88.45714285714286,
+                    "width": 96.45714285714286,
+                    "height": 11.314285714285715
+                },
+                "arrowDirection": "down"
+            }
+        ],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "rua_vila": {
+        "id": "rua_vila",
+        "name": "Rua da Vila",
+        "description": "Descrição do local...",
+        "image": "images/rua_vila.jpg",
+        "unlocked": false,
+        "connections": [
+            "portao_entrada",
+            "praca_central",
+            "casa_abandonada_01_frente",
+            "casa_abandonada_02_frente"
+        ],
+        "hotspots": [
+            {
+                "id": "hotspot_rua_vila_1",
+                "name": "Voltar para o Portão",
+                "action": "navigate",
+                "target": "portao_entrada",
+                "position": {
+                    "x": 40,
+                    "y": 80,
+                    "width": 20,
+                    "height": 15
+                },
+                "arrowDirection": "down"
+            }
+        ],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "praca_central": {
+        "id": "praca_central",
+        "name": "Praça Central",
+        "description": "Descrição do local...",
+        "image": "images/praca_central.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_vila",
+            "poco_profundo",
+            "rua_final"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "poco_profundo": {
+        "id": "poco_profundo",
+        "name": "Poço Profundo",
+        "description": "Descrição do local...",
+        "image": "images/poco_profundo.jpg",
+        "unlocked": false,
+        "connections": [
+            "praca_central"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_01_frente": {
+        "id": "casa_abandonada_01_frente",
+        "name": "casa_abandonada_01_frente",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_01_frente.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_vila",
+            "casa_abandonada_01_porta_entrada"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_01_sala": {
+        "id": "casa_abandonada_01_sala",
+        "name": "casa_abandonada_01_sala",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_01_sala.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_01_porta_entrada",
+            "casa_abandonada_01_quarto"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_01_quarto": {
+        "id": "casa_abandonada_01_quarto",
+        "name": "casa_abandonada_01_quarto",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_01_quarto.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_01_sala"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_02_frente": {
+        "id": "casa_abandonada_02_frente",
+        "name": "casa_abandonada_02_frente",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_02_frente.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_vila",
+            "casa_abandonada_01_porta_entrada"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_02_quintal": {
+        "id": "casa_abandonada_02_quintal",
+        "name": "casa_abandonada_02_quintal",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_02_quintal.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_02_cozinha"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "portao_entrada_fechado": {
+        "id": "portao_entrada_fechado",
+        "name": "Portão de Entrada",
+        "description": "Descrição do local...",
+        "image": "images/portao_entrada_fechado.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_vila"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_01_porta_entrada": {
+        "id": "casa_abandonada_01_porta_entrada",
+        "name": "casa_abandonada_01_porta_entrada",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_01_porta_entrada.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_01_frente",
+            "casa_abandonada_01_sala",
+            "casa_abandonada_02_frente"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_02_porta_entrada": {
+        "id": "casa_abandonada_02_porta_entrada",
+        "name": "casa_abandonada_02_porta_entrada",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_02_porta_entrada.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_02_sala"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_02_sala": {
+        "id": "casa_abandonada_02_sala",
+        "name": "casa_abandonada_02_sala",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_02_sala.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_02_porta_entrada",
+            "casa_abandonada_02_cozinha"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "casa_abandonada_02_cozinha": {
+        "id": "casa_abandonada_02_cozinha",
+        "name": "casa_abandonada_02_cozinha",
+        "description": "Descrição do local...",
+        "image": "images/casa_abandonada_02_cozinha.jpg",
+        "unlocked": false,
+        "connections": [
+            "casa_abandonada_02_sala",
+            "casa_abandonada_02_quintal"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "rua_final": {
+        "id": "rua_final",
+        "name": "rua_final",
+        "description": "Descrição do local...",
+        "image": "images/rua_final.jpg",
+        "unlocked": false,
+        "connections": [
+            "praca_central",
+            "portao_saida",
+            "cemiterio_entrada",
+            "igreja_frente",
+            "portao_saida_aberto",
+            "portao_saida_cadeado"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "portao_saida": {
+        "id": "portao_saida",
+        "name": "portao_saida",
+        "description": "Descrição do local...",
+        "image": "images/portao_saida.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_final"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "portao_saida_aberto": {
+        "id": "portao_saida_aberto",
+        "name": "portao_saida_aberto",
+        "description": "Descrição do local...",
+        "image": "images/portao_saida_aberto.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_final"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "cemiterio_entrada": {
+        "id": "cemiterio_entrada",
+        "name": "cemiterio_entrada",
+        "description": "Descrição do local...",
+        "image": "images/cemiterio_entrada.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_final",
+            "cemiterio_dentro"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "cemiterio_dentro": {
+        "id": "cemiterio_dentro",
+        "name": "cemiterio_dentro",
+        "description": "Descrição do local...",
+        "image": "images/cemiterio_dentro.jpg",
+        "unlocked": false,
+        "connections": [
+            "cemiterio_entrada",
+            "cemiterio_mausoleo_frente"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "cemiterio_mausoleo_frente": {
+        "id": "cemiterio_mausoleo_frente",
+        "name": "cemiterio_mausoleo_frente",
+        "description": "Descrição do local...",
+        "image": "images/cemiterio_mausoleo_frente.jpg",
+        "unlocked": false,
+        "connections": [
+            "cemiterio_dentro",
+            "cemiterio_mausoleo_dentro"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "cemiterio_mausoleo_dentro": {
+        "id": "cemiterio_mausoleo_dentro",
+        "name": "cemiterio_mausoleo_dentro",
+        "description": "Descrição do local...",
+        "image": "images/cemiterio_mausoleo_dentro.jpg",
+        "unlocked": false,
+        "connections": [
+            "cemiterio_mausoleo_frente"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "portao_saida_cadeado": {
+        "id": "portao_saida_cadeado",
+        "name": "portao_saida_cadeado",
+        "description": "Descrição do local...",
+        "image": "images/portao_saida_cadeado.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_final"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "igreja_frente": {
+        "id": "igreja_frente",
+        "name": "igreja_frente",
+        "description": "Descrição do local...",
+        "image": "images/igreja_frente.jpg",
+        "unlocked": false,
+        "connections": [
+            "rua_final",
+            "igreja_dentro",
+            "igreja_fundos"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "igreja_dentro": {
+        "id": "igreja_dentro",
+        "name": "igreja_dentro",
+        "description": "Descrição do local...",
+        "image": "images/igreja_dentro.jpg",
+        "unlocked": false,
+        "connections": [
+            "igreja_frente",
+            "igreja_sinos"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "igreja_fundos": {
+        "id": "igreja_fundos",
+        "name": "igreja_fundos",
+        "description": "Descrição do local...",
+        "image": "images/igreja_fundos.jpg",
+        "unlocked": false,
+        "connections": [
+            "igreja_frente"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    },
+    "igreja_sinos": {
+        "id": "igreja_sinos",
+        "name": "igreja_sinos",
+        "description": "Descrição do local...",
+        "image": "images/igreja_sinos.jpg",
+        "unlocked": false,
+        "connections": [
+            "igreja_dentro"
+        ],
+        "hotspots": [],
+        "items": [],
+        "imageDimensions": {
+            "width": 1024,
+            "height": 1024
+        }
+    }
+};
+
+// Helper functions
+function getLocation(locationId) {
+    return GAME_MAP[locationId];
+}
+
+function getUnlockedLocations() {
+    return Object.values(GAME_MAP).filter(loc => loc.unlocked);
+}
+
+// Export for use in game
+if (typeof window !== 'undefined') {
+    window.getLocation = getLocation;
+    window.getUnlockedLocations = getUnlockedLocations;
+}
+
+        // VERSÃO OFFLINE - Usa localStorage ao invés de servidor
+
+        // IndexedDB helpers para carregar dados do editor
+        function openGameDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('VilaAbandonadaDB', 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('gameData')) {
+                        db.createObjectStore('gameData');
+                    }
+                };
+            });
+        }
+
+        async function loadFromIndexedDB(key) {
+            try {
+                const db = await openGameDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['gameData'], 'readonly');
+                    const store = transaction.objectStore('gameData');
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (e) {
+                console.log('IndexedDB não disponível:', e);
+                return null;
+            }
+        }
+
+        // Carregar GAME_MAP do IndexedDB se existir
+        async function loadGameMapFromEditor() {
+            const editorData = await loadFromIndexedDB('gameLocations');
+            if (editorData) {
+                console.log('✓ Carregando mapa do editor...', editorData);
+                // Merge com GAME_MAP existente
+                Object.assign(GAME_MAP, editorData);
+                return true;
+            }
+            return false;
+        }
+
+
+
+        // Game State
+        let gameState = {
+            currentLocation: 'floresta',
+            visitedLocations: ['forest_entrance'],
+            collectedItems: [],
+            solvedPuzzles: [],
+            inventory: {},
+            hasKey: false,
+            gameCompleted: false
+        };
+
+        // DOM Elements
+        const gameView = document.getElementById('gameView');
+        const locationImage = document.getElementById('locationImage');
+        const locationName = document.getElementById('locationName');
+        const locationDescription = document.getElementById('locationDescription');
+        const hotspotsContainer = document.getElementById('hotspots');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const loadingScreen = document.getElementById('loadingScreen');
+
+        // Buttons
+        const connectionsBtn = document.getElementById('connectionsBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const mapBtn = document.getElementById('mapBtn');
+        const inventoryBtn = document.getElementById('inventoryBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Overlays
+        const connectionsOverlay = document.getElementById('connectionsOverlay');
+        const mapOverlay = document.getElementById('mapOverlay');
+        const inventoryOverlay = document.getElementById('inventoryOverlay');
+        const puzzleOverlay = document.getElementById('puzzleOverlay');
+        const closeConnectionsBtn = document.getElementById('closeConnectionsBtn');
+        const closeMapBtn = document.getElementById('closeMapBtn');
+        const closeInventoryBtn = document.getElementById('closeInventoryBtn');
+        const closePuzzleBtn = document.getElementById('closePuzzleBtn');
+
+        // Notification
+        const itemNotification = document.getElementById('itemNotification');
+        const notificationText = document.getElementById('notificationText');
+
+        // Initialize game
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Carregar dados do editor primeiro (se existir)
+            const loadedFromEditor = await loadGameMapFromEditor();
+            if (loadedFromEditor) {
+                console.log('✓ Mapa carregado do editor');
+            }
+
+            loadProgress();
+            renderLocation();
+            setupEventListeners();
+
+            // Reajustar container quando browser redimensionar
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(adjustHotspots, 100);
+            });
+
+            hotspotsContainer.addEventListener('click', (event) => {
+                console.log('hotspotsContainer clicked!');
+                const hotspotEl = event.target.closest('.hotspot');
+                if (hotspotEl && hotspotEl.dataset.id) {
+                    console.log('Hotspot element found:', hotspotEl);
+                    const location = getLocation(gameState.currentLocation);
+                    const hotspot = location.hotspots.find(h => h.id === hotspotEl.dataset.id);
+                    if (hotspot) {
+                        console.log('Hotspot data found:', hotspot);
+                        handleHotspotClick(hotspot);
+                    }
+                }
+            });
+
+            // Tecla Tab ou H para mostrar todos os hotspots temporariamente
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab' || e.key === 'h' || e.key === 'H') {
+                    e.preventDefault();
+                    const hotspots = document.querySelectorAll('.hotspot');
+                    hotspots.forEach(h => {
+                        h.style.border = '2px dashed rgba(255, 235, 59, 0.7)';
+                        h.style.background = 'rgba(255, 235, 59, 0.15)';
+                    });
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'Tab' || e.key === 'h' || e.key === 'H') {
+                    const hotspots = document.querySelectorAll('.hotspot');
+                    hotspots.forEach(h => {
+                        // Só esconder se não estiver com hover
+                        if (!h.matches(':hover')) {
+                            h.style.border = 'none';
+                            h.style.background = 'transparent';
+                        }
+                    });
+                }
+            });
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            connectionsBtn.addEventListener('click', openConnections);
+            saveBtn.addEventListener('click', () => saveProgress(true));
+            mapBtn.addEventListener('click', openMap);
+            inventoryBtn.addEventListener('click', openInventory);
+            resetBtn.addEventListener('click', resetGame);
+            closeConnectionsBtn.addEventListener('click', () => connectionsOverlay.style.display = 'none');
+            closeMapBtn.addEventListener('click', () => mapOverlay.style.display = 'none');
+            closeInventoryBtn.addEventListener('click', () => inventoryOverlay.style.display = 'none');
+            closePuzzleBtn.addEventListener('click', () => puzzleOverlay.style.display = 'none');
+        }
+
+        // Load progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem('vila_abandonada_offline');
+            if (saved) {
+                try {
+                    gameState = JSON.parse(saved);
+                    showNotification('Progresso carregado!');
+                } catch (e) {
+                    console.error('Erro ao carregar save:', e);
+                }
+            }
+        }
+
+        // Save progress to localStorage
+        function saveProgress(showMessage = true) {
+            try {
+                localStorage.setItem('vila_abandonada_offline', JSON.stringify(gameState));
+                if (showMessage) {
+                    showNotification('Progresso salvo!');
+                }
+            } catch (e) {
+                console.error('Erro ao salvar:', e);
+                if (showMessage) {
+                    showNotification('Erro ao salvar', true);
+                }
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            if (confirm('Tem certeza que deseja resetar o jogo? Todo progresso será perdido!')) {
+                localStorage.removeItem('vila_abandonada_offline');
+                gameState = {
+                    username: 'Teste',
+                    currentLocation: 'forest_entrance',
+                    visitedLocations: ['forest_entrance'],
+                    collectedItems: [],
+                    solvedPuzzles: [],
+                    inventory: {},
+                    hasKey: false,
+                    gameCompleted: false
+                };
+                renderLocation();
+                showNotification('Jogo resetado!');
+            }
+        }
+
+        function adjustHotspots() {
+            adjustHotspotsContainer();
+
+            const img = locationImage;
+            const naturalWidth = img.naturalWidth;
+            const naturalHeight = img.naturalHeight;
+            const clientWidth = img.clientWidth;
+            const clientHeight = img.clientHeight;
+
+            if (naturalWidth === 0 || naturalHeight === 0) {
+                hotspotsContainer.style.display = 'none';
+                return;
+            }
+            hotspotsContainer.style.display = 'block';
+
+            const naturalAspectRatio = naturalWidth / naturalHeight;
+            const clientAspectRatio = clientWidth / clientHeight;
+
+            let renderedWidth, renderedHeight, offsetX, offsetY;
+
+            if (naturalAspectRatio > clientAspectRatio) {
+                renderedWidth = clientWidth;
+                renderedHeight = renderedWidth / naturalAspectRatio;
+                offsetX = 0;
+                offsetY = (clientHeight - renderedHeight) / 2;
+            } else {
+                renderedHeight = clientHeight;
+                renderedWidth = renderedHeight * naturalAspectRatio;
+                offsetX = (clientWidth - renderedWidth) / 2;
+                offsetY = 0;
+            }
+
+            const hotspots = hotspotsContainer.querySelectorAll('.hotspot');
+
+            hotspots.forEach(hotspot => {
+                const x = parseFloat(hotspot.dataset.x);
+                const y = parseFloat(hotspot.dataset.y);
+                const width = parseFloat(hotspot.dataset.width);
+                const height = parseFloat(hotspot.dataset.height);
+
+                hotspot.style.left = offsetX + (x / 100) * renderedWidth + 'px';
+                hotspot.style.top = offsetY + (y / 100) * renderedHeight + 'px';
+                hotspot.style.width = (width / 100) * renderedWidth + 'px';
+                hotspot.style.height = (height / 100) * renderedHeight + 'px';
+            });
+        }
+
+        // Ajustar hotspots container para coincidir com a imagem
+        function adjustHotspotsContainer() {
+            const imgRect = locationImage.getBoundingClientRect();
+            const viewRect = gameView.getBoundingClientRect();
+
+            hotspotsContainer.style.width = imgRect.width + 'px';
+            hotspotsContainer.style.height = imgRect.height + 'px';
+            hotspotsContainer.style.transform = 'none'; // Remover a escala
+            hotspotsContainer.style.left = (imgRect.left - viewRect.left) + 'px';
+            hotspotsContainer.style.top = (imgRect.top - viewRect.top) + 'px';
+        }
+
+        // Render current location
+        function renderLocation() {
+            const location = getLocation(gameState.currentLocation);
+
+            if (!location) {
+                console.error('Location not found:', gameState.currentLocation);
+                return;
+            }
+
+            // Mark as visited
+            if (!gameState.visitedLocations.includes(location.id)) {
+                gameState.visitedLocations.push(location.id);
+            }
+
+            // Update UI
+            locationName.textContent = location.name;
+            locationDescription.textContent = location.description;
+            locationImage.src = location.image;
+            locationImage.alt = location.name;
+
+            const handleImageLoad = () => {
+                hotspotsContainer.innerHTML = '';
+
+                location.hotspots.forEach((hotspot, index) => {
+                    const hotspotEl = createHotspot(hotspot);
+                    hotspotsContainer.appendChild(hotspotEl);
+                });
+
+                if (location.items) {
+                    location.items.forEach(item => {
+                        if (!gameState.collectedItems.includes(item.id)) {
+                            const itemHotspot = createItemHotspot(item);
+                            hotspotsContainer.appendChild(itemHotspot);
+                        }
+                    });
+                }
+
+                adjustHotspots();
+            };
+
+            if (locationImage.complete) {
+                requestAnimationFrame(handleImageLoad);
+            } else {
+                locationImage.onload = handleImageLoad;
+            }
+
+            // Auto-save
+            saveProgress(false);
+        }
+
+        // Create hotspot element
+        function createHotspot(hotspot) {
+            const div = document.createElement('div');
+            div.className = 'hotspot';
+
+            // Salvar dados de posição em atributos data-
+            div.dataset.x = hotspot.position.x;
+            div.dataset.y = hotspot.position.y;
+            div.dataset.width = hotspot.position.width;
+            div.dataset.height = hotspot.position.height;
+
+            div.dataset.id = hotspot.id; // Add this line
+
+            if (hotspot.action === 'navigate') {
+                div.classList.add('is-navigation-hotspot');
+                const arrow = document.createElement('span');
+                arrow.className = 'navigation-hotspot';
+                let arrowChar = '➤';
+                if (hotspot.arrowDirection) {
+                    arrow.classList.add('arrow-' + hotspot.arrowDirection);
+                    switch (hotspot.arrowDirection) {
+                        case 'left':
+                            arrowChar = '◄';
+                            break;
+                        case 'up':
+                            arrowChar = '▲';
+                            break;
+                        case 'down':
+                            arrowChar = '▼';
+                            break;
+                    }
+                }
+                arrow.innerHTML = arrowChar;
+                div.appendChild(arrow);
+            }
+            
+            div.style.position = 'absolute';
+            div.style.zIndex = '150';
+            div.style.cursor = 'pointer';
+            div.style.pointerEvents = 'auto';
+            div.title = hotspot.name;
+            div.style.border = 'none';
+            div.style.background = 'transparent';
+            div.style.transition = 'all 0.3s ease';
+
+            if (hotspot.action !== 'navigate') {
+                // Hover effect - aparecem ao passar o mouse
+                div.addEventListener('mouseenter', () => {
+                    div.style.border = '3px solid rgba(255, 235, 59, 0.9)';
+                    div.style.background = 'rgba(255, 235, 59, 0.3)';
+                });
+                div.addEventListener('mouseleave', () => {
+                    div.style.border = 'none';
+                    div.style.background = 'transparent';
+                });
+            }
+
+            const label = document.createElement('div');
+            label.className = 'hotspot-label';
+            label.textContent = hotspot.name;
+            div.appendChild(label);
+
+            return div;
+        }
+
+        // Create item hotspot
+        function createItemHotspot(item) {
+            const div = document.createElement('div');
+
+            // Check if item has image path
+            if (item.image && item.position) {
+                // Render as PNG image with hover effect (usando backgroundImage igual ao editor)
+                div.className = 'item-png';
+                div.title = item.name;
+
+                // Initialize transform if not set
+                if (!item.transform) {
+                    item.transform = {
+                        rotation: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false,
+                        rotateX: 0, rotateY: 0, skewX: 0, skewY: 0,
+                        opacity: 1, shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0
+                    };
+                }
+
+                // Build base transform string
+                const baseTransforms = [
+                    'translate(-50%, -50%)',
+                    `rotateZ(${item.transform.rotation || 0}deg)`,
+                    `rotateX(${item.transform.rotateX || 0}deg)`,
+                    `rotateY(${item.transform.rotateY || 0}deg)`,
+                    `scaleX(${(item.transform.scaleX || 1) * (item.transform.flipX ? -1 : 1)})`,
+                    `scaleY(${(item.transform.scaleY || 1) * (item.transform.flipY ? -1 : 1)})`,
+                    `skewX(${item.transform.skewX || 0}deg)`,
+                    `skewY(${item.transform.skewY || 0}deg)`
+                ];
+
+                // Build filter string for shadow
+                const shadowBlur = item.transform.shadowBlur || 0;
+                const shadowX = item.transform.shadowOffsetX || 0;
+                const shadowY = item.transform.shadowOffsetY || 0;
+                const filterString = shadowBlur > 0
+                    ? `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.5))`
+                    : 'none';
+
+                // CSS IGUAL AO EDITOR - usando backgroundImage
+                div.style.cssText = `
+                    position: absolute;
+                    left: ${item.position.x}%;
+                    top: ${item.position.y}%;
+                    width: ${item.size?.width || 80}px;
+                    height: ${item.size?.height || 80}px;
+                    transform: ${baseTransforms.join(' ')};
+                    cursor: pointer;
+                    pointer-events: auto;
+                    z-index: 100;
+                    background-image: url(${item.image});
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    opacity: ${item.transform.opacity || 1};
+                    filter: ${filterString};
+                    transition: transform 0.3s ease, filter 0.3s ease;
+                `;
+
+                div.dataset.baseTransform = baseTransforms.join(' ');
+                div.dataset.baseFilter = filterString;
+
+                // Hover effect - scale on top of existing transforms
+                div.addEventListener('mouseenter', () => {
+                    div.style.transform = div.dataset.baseTransform + ' scale(1.15)';
+                    const baseF = div.dataset.baseFilter;
+                    div.style.filter = (baseF !== 'none' ? baseF + ' ' : '') + 'brightness(1.1)';
+                });
+                div.addEventListener('mouseleave', () => {
+                    div.style.transform = div.dataset.baseTransform;
+                    div.style.filter = div.dataset.baseFilter;
+                });
+
+            } else {
+                // Fallback to hotspot style
+                div.className = 'hotspot item-hotspot';
+
+                // Use position if available, otherwise default
+                if (item.position) {
+                    div.style.left = item.position.x + '%';
+                    div.style.top = item.position.y + '%';
+                } else {
+                    div.style.left = '50%';
+                    div.style.top = '50%';
+                }
+
+                div.style.width = (item.position?.width || 10) + '%';
+                div.style.height = (item.position?.height || 10) + '%';
+                div.title = item.name;
+
+                const label = document.createElement('div');
+                label.className = 'hotspot-label';
+                label.textContent = '✨ ' + item.name;
+                div.appendChild(label);
+            }
+
+            div.addEventListener('click', () => {
+                collectItem(item);
+            });
+
+            return div;
+        }
+
+        // Handle hotspot click
+        function handleHotspotClick(hotspot) {
+            switch (hotspot.action) {
+                case 'navigate':
+                    navigateToLocation(hotspot.target, hotspot);
+                    break;
+                case 'puzzle':
+                    openPuzzle(hotspot.target);
+                    break;
+                case 'examine':
+                    showNotification(hotspot.message || 'Nada de interessante aqui...');
+                    break;
+                case 'collect':
+                    const location = getLocation(gameState.currentLocation);
+                    const itemToCollect = location.items?.find(item => item.id === hotspot.itemId);
+                    if (itemToCollect && !gameState.collectedItems.includes(hotspot.itemId)) {
+                        collectItem(itemToCollect);
+                    } else {
+                        showNotification('Item não encontrado ou já coletado');
+                    }
+                    break;
+                case 'interact':
+                    showNotification('Nada de interessante aqui...');
+                    break;
+            }
+        }
+
+        // Navigate to new location
+        function navigateToLocation(locationId, hotspot) {
+            const location = getLocation(locationId);
+
+            if (!location) {
+                showNotification('Local não encontrado', true);
+                return;
+            }
+
+            if (hotspot && hotspot.action === 'navigate') {
+                const transformOriginX = hotspot.position.x + (hotspot.position.width / 2);
+                const transformOriginY = hotspot.position.y + (hotspot.position.height / 2);
+
+                locationImage.style.transformOrigin = `${transformOriginX}% ${transformOriginY}%`;
+                hotspotsContainer.style.transformOrigin = `${transformOriginX}% ${transformOriginY}%`;
+                gameView.classList.add('zoom-in-effect');
+
+                setTimeout(() => {
+                    gameState.currentLocation = locationId;
+                    renderLocation();
+
+                    requestAnimationFrame(() => {
+                        gameView.classList.remove('zoom-in-effect');
+                        locationImage.style.transformOrigin = 'center center';
+                        hotspotsContainer.style.transformOrigin = 'center center';
+
+                        // Reajustar hotspots após a transição do zoom terminar
+                        const handleTransitionEnd = () => {
+                            adjustHotspots();
+                            locationImage.removeEventListener('transitionend', handleTransitionEnd);
+                        };
+                        locationImage.addEventListener('transitionend', handleTransitionEnd);
+
+                        // Fallback caso o transitionend não dispare
+                        setTimeout(() => {
+                            adjustHotspots();
+                        }, 750);
+                    });
+
+                    saveProgress(false);
+                }, 700);
+            } else {
+                gameState.currentLocation = locationId;
+                renderLocation();
+                saveProgress(false);
+            }
+        }
+
+        // Collect item
+        function collectItem(item) {
+            gameState.collectedItems.push(item.id);
+            gameState.inventory[item.id] = {
+                name: item.name,
+                description: item.description
+            };
+
+            showNotification(`Você pegou: ${item.name}`);
+            renderLocation();
+        }
+
+        // Open puzzle
+        function openPuzzle(puzzleId) {
+            const location = getLocation(gameState.currentLocation);
+            const puzzle = location.puzzle;
+
+            if (!puzzle || puzzle.id !== puzzleId) {
+                showNotification('Enigma não encontrado', true);
+                return;
+            }
+
+            if (gameState.solvedPuzzles.includes(puzzleId)) {
+                showNotification('Você já resolveu este enigma');
+                return;
+            }
+
+            renderPuzzle(puzzle);
+            puzzleOverlay.style.display = 'flex';
+        }
+
+        // Render puzzle
+        function renderPuzzle(puzzle) {
+            const puzzleTitle = document.getElementById('puzzleTitle');
+            const puzzleContainer = document.getElementById('puzzleContainer');
+
+            puzzleTitle.textContent = puzzle.name;
+            puzzleContainer.innerHTML = `
+                <p class="puzzle-description">${puzzle.description}</p>
+                <div id="puzzleInput"></div>
+                <button id="submitPuzzle" class="btn btn-primary">Confirmar</button>
+                <div id="puzzleMessage" class="form-message"></div>
+            `;
+
+            const puzzleInput = document.getElementById('puzzleInput');
+
+            switch (puzzle.type) {
+                case 'direction':
+                case 'color_sequence':
+                case 'riddle':
+                    puzzle.options.forEach((option, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'puzzle-option';
+                        btn.textContent = option;
+                        btn.dataset.index = index;
+                        puzzleInput.appendChild(btn);
+                    });
+                    break;
+
+                case 'sequence_symbols':
+                    puzzleInput.innerHTML = '<p>Clique nos símbolos na ordem correta:</p><div id="symbolSequence"></div><button id="clearSequence" class="btn btn-secondary" style="margin-top: 10px;">Limpar</button>';
+                    const symbolContainer = document.getElementById('symbolSequence');
+                    puzzle.options.forEach((option, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'puzzle-option symbol-btn';
+                        btn.textContent = option;
+                        btn.dataset.index = index;
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addToSequence(index, option);
+                        });
+                        symbolContainer.appendChild(btn);
+                    });
+
+                    const sequenceDisplay = document.createElement('div');
+                    sequenceDisplay.id = 'sequenceDisplay';
+                    sequenceDisplay.style.marginTop = '15px';
+                    sequenceDisplay.style.padding = '10px';
+                    sequenceDisplay.style.background = 'rgba(255,255,255,0.05)';
+                    sequenceDisplay.style.borderRadius = '5px';
+                    sequenceDisplay.innerHTML = '<strong>Sequência:</strong> <span id="currentSequence">Nenhum</span>';
+                    puzzleInput.appendChild(sequenceDisplay);
+
+                    document.getElementById('clearSequence').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.puzzleSequence = [];
+                        document.getElementById('currentSequence').textContent = 'Nenhum';
+                    });
+
+                    window.puzzleSequence = [];
+                    break;
+
+                case 'math':
+                case 'code':
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = 'puzzleAnswer';
+                    input.placeholder = 'Digite sua resposta';
+                    puzzleInput.appendChild(input);
+                    break;
+
+                case 'item_combination':
+                    puzzleInput.innerHTML = '<p>Você precisa de itens especiais no inventário.</p>';
+                    puzzle.requiredItems.forEach(itemId => {
+                        const hasItem = gameState.collectedItems.includes(itemId);
+                        const itemName = gameState.inventory[itemId]?.name || itemId;
+                        const status = hasItem ? '✓' : '✗';
+                        puzzleInput.innerHTML += `<p class="${hasItem ? 'has-item' : 'missing-item'}">${status} ${itemName}</p>`;
+                    });
+                    break;
+
+                case 'key_check':
+                    const hasKey = gameState.hasKey;
+                    puzzleInput.innerHTML = hasKey
+                        ? '<p class="has-item">✓ Você tem a Chave Mestra!</p>'
+                        : '<p class="missing-item">✗ Você precisa da Chave Mestra</p>';
+                    break;
+            }
+
+            document.getElementById('submitPuzzle').addEventListener('click', () => {
+                checkPuzzleAnswer(puzzle);
+            });
+        }
+
+        // Helper for sequence puzzles
+        function addToSequence(index, symbol) {
+            if (!window.puzzleSequence) window.puzzleSequence = [];
+            window.puzzleSequence.push(index);
+            document.getElementById('currentSequence').textContent = window.puzzleSequence.map(i =>
+                ['☀️ Sol', '⭐ Estrela', '🌙 Lua'][i] || i
+            ).join(' → ');
+        }
+
+        // Check puzzle answer
+        function checkPuzzleAnswer(puzzle) {
+            const puzzleMessage = document.getElementById('puzzleMessage');
+            let isCorrect = false;
+
+            switch (puzzle.type) {
+                case 'direction':
+                case 'riddle':
+                    const selectedOption = document.querySelector('.puzzle-option.selected');
+                    if (selectedOption && parseInt(selectedOption.dataset.index) === puzzle.correctAnswer) {
+                        isCorrect = true;
+                    }
+                    break;
+
+                case 'sequence_symbols':
+                    const userSequence = window.puzzleSequence || [];
+                    const correctSeq = puzzle.correctSequence;
+                    if (JSON.stringify(userSequence) === JSON.stringify(correctSeq)) {
+                        isCorrect = true;
+                    }
+                    break;
+
+                case 'math':
+                case 'code':
+                    const answer = document.getElementById('puzzleAnswer').value.trim();
+                    if (answer == puzzle.answer) {
+                        isCorrect = true;
+                    }
+                    break;
+
+                case 'item_combination':
+                    isCorrect = puzzle.requiredItems.every(itemId => gameState.collectedItems.includes(itemId));
+                    break;
+
+                case 'key_check':
+                    isCorrect = gameState.hasKey;
+                    break;
+            }
+
+            if (isCorrect) {
+                gameState.solvedPuzzles.push(puzzle.id);
+                puzzleMessage.textContent = 'Correto!';
+                puzzleMessage.className = 'form-message success';
+
+                if (puzzle.reward) {
+                    if (puzzle.reward.id === 'master_key') {
+                        gameState.hasKey = true;
+                    }
+                    collectItem(puzzle.reward);
+                }
+
+                if (puzzle.onSuccess === 'game_complete') {
+                    gameState.gameCompleted = true;
+                    saveProgress();
+                    setTimeout(() => {
+                        puzzleOverlay.style.display = 'none';
+                        showVictoryScreen();
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        puzzleOverlay.style.display = 'none';
+                    }, 1500);
+                }
+
+                saveProgress();
+            } else {
+                puzzleMessage.textContent = 'Resposta incorreta. Tente novamente.';
+                puzzleMessage.className = 'form-message error';
+            }
+        }
+
+        // Enable option selection
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('puzzle-option')) {
+                document.querySelectorAll('.puzzle-option').forEach(opt => opt.classList.remove('selected'));
+                e.target.classList.add('selected');
+            }
+        });
+
+        // Open connections overlay
+        function openConnections() {
+            const connectionsContainer = document.getElementById('connectionsContainer');
+            const currentLocation = getLocation(gameState.currentLocation);
+
+            if (!currentLocation) return;
+
+            connectionsContainer.innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: #f0a500; margin-bottom: 15px;">📍 ${currentLocation.name}</h3>
+                    <p style="line-height: 1.6;">${currentLocation.description}</p>
+                </div>
+
+                <h3 style="color: #f0a500; margin-bottom: 15px;">🔗 Conexões Disponíveis (${currentLocation.connections.length})</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    ${currentLocation.connections.map(connId => {
+                        const connLocation = getLocation(connId);
+                        const isVisited = gameState.visitedLocations.includes(connId);
+                        return `
+                            <div style="background: rgba(${isVisited ? '76, 175, 80' : '240, 165, 0'}, 0.1); border: 2px solid ${isVisited ? '#4CAF50' : '#f0a500'}; border-radius: 10px; padding: 15px; cursor: pointer;" onclick="navigateFromConnections('${connId}')">
+                                <div style="font-weight: bold; color: ${isVisited ? '#4CAF50' : '#f0a500'}; margin-bottom: 8px;">
+                                    ${isVisited ? '✓' : '→'} ${connLocation.name}
+                                </div>
+                                <div style="font-size: 0.9em; color: #b0b0b0;">
+                                    ${connLocation.description.substring(0, 60)}...
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            connectionsOverlay.style.display = 'flex';
+        }
+
+        function navigateFromConnections(locationId) {
+            navigateToLocation(locationId);
+            connectionsOverlay.style.display = 'none';
+        }
+
+        // Open map
+        function openMap() {
+            const mapContainer = document.getElementById('mapContainer');
+            mapContainer.innerHTML = '';
+
+            const unlockedLocations = getUnlockedLocations(gameState.visitedLocations);
+
+            unlockedLocations.forEach(location => {
+                const locationCard = document.createElement('div');
+                locationCard.className = 'map-location';
+                if (location.id === gameState.currentLocation) {
+                    locationCard.classList.add('current');
+                }
+
+                locationCard.innerHTML = `
+                    <h3>${location.name}</h3>
+                    <p>${location.description.substring(0, 60)}...</p>
+                `;
+
+                locationCard.addEventListener('click', () => {
+                    navigateToLocation(location.id);
+                    mapOverlay.style.display = 'none';
+                });
+
+                mapContainer.appendChild(locationCard);
+            });
+
+            mapOverlay.style.display = 'flex';
+        }
+
+        // Open inventory
+        function openInventory() {
+            const inventoryGrid = document.getElementById('inventoryGrid');
+            const inventoryEmpty = document.getElementById('inventoryEmpty');
+
+            inventoryGrid.innerHTML = '';
+
+            if (gameState.collectedItems.length === 0) {
+                inventoryEmpty.style.display = 'block';
+            } else {
+                inventoryEmpty.style.display = 'none';
+
+                gameState.collectedItems.forEach(itemId => {
+                    const item = gameState.inventory[itemId];
+                    if (item) {
+                        const itemCard = document.createElement('div');
+                        itemCard.className = 'inventory-item';
+                        itemCard.innerHTML = `
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-description">${item.description}</div>
+                        `;
+                        inventoryGrid.appendChild(itemCard);
+                    }
+                });
+            }
+
+            inventoryOverlay.style.display = 'flex';
+        }
+
+        // Show notification
+        function showNotification(message, isError = false) {
+            notificationText.textContent = message;
+            itemNotification.className = 'notification ' + (isError ? 'error' : 'success');
+            itemNotification.style.display = 'block';
+
+            setTimeout(() => {
+                itemNotification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show victory screen
+        function showVictoryScreen() {
+            gameView.innerHTML = `
+                <div class="victory-screen">
+                    <h1>🎉 Parabéns! 🎉</h1>
+                    <h2>Você escapou da Vila Abandonada!</h2>
+                    <p>Você encontrou a Chave Mestra e abriu o portão.</p>
+                    <p>A névoa se dissipa e você finalmente encontra o caminho de volta.</p>
+                    <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(start game-phaser.html)",
+      "WebFetch(domain:phaser.io)",
+      "Bash(start start-server.bat)",
+      "Bash(index.php)",
+      "Bash(SETUP.md 2)",
+      "Bash(nul)",
+      "Bash(start index.php)",
+      "Bash(git init:*)",
+      "Bash(apiconfig.example.php)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
