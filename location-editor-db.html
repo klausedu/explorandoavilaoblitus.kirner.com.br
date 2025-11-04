@@ -3084,26 +3084,47 @@ if (typeof module !== 'undefined' && module.exports) {
                 locationOrder = [];
 
                 locations.forEach(loc => {
-                    // Convert hotspots from DB format to editor format
-                    const hotspots = (loc.hotspots || []).map(h => {
-                        // Padronizar: 'navigation' do banco vira 'navigate' no editor
-                        let action = h.type || 'navigate';
-                        if (action === 'navigation') action = 'navigate';
+                    // Separar hotspots entre navegação e items
+                    const hotspots = [];
+                    const items = [];
 
-                        return {
-                            id: 'hotspot_' + Date.now() + Math.random(),
-                            name: h.label || 'Hotspot',
-                            action: action,
-                            target: h.target_location || '',
-                            position: {
-                                x: parseFloat(h.x) || 0,
-                                y: parseFloat(h.y) || 0,
-                                width: parseFloat(h.width) || 10,
-                                height: parseFloat(h.height) || 10
-                            },
-                            arrowDirection: 'up',
-                            item: h.item_id || null
-                        };
+                    (loc.hotspots || []).forEach(h => {
+                        if (h.type === 'item' && h.item_id) {
+                            // Este é um item, não um hotspot de navegação
+                            items.push({
+                                id: h.item_id,
+                                name: h.label || h.item_id,
+                                description: h.description || '',
+                                position: {
+                                    x: parseFloat(h.x) || 50,
+                                    y: parseFloat(h.y) || 50
+                                },
+                                size: {
+                                    width: parseFloat(h.width) || 5,
+                                    height: parseFloat(h.height) || 5
+                                },
+                                found: false
+                            });
+                        } else {
+                            // Este é um hotspot de navegação/interação
+                            let action = h.type || 'navigate';
+                            if (action === 'navigation') action = 'navigate';
+
+                            hotspots.push({
+                                id: 'hotspot_' + Date.now() + Math.random(),
+                                name: h.label || 'Hotspot',
+                                action: action,
+                                target: h.target_location || '',
+                                position: {
+                                    x: parseFloat(h.x) || 0,
+                                    y: parseFloat(h.y) || 0,
+                                    width: parseFloat(h.width) || 10,
+                                    height: parseFloat(h.height) || 10
+                                },
+                                arrowDirection: 'up',
+                                item: h.item_id || null
+                            });
+                        }
                     });
 
                     gameLocations[loc.id] = {
@@ -3114,7 +3135,7 @@ if (typeof module !== 'undefined' && module.exports) {
                         unlocked: true,
                         connections: [],
                         hotspots: hotspots,
-                        items: [],
+                        items: items,
                         imageDimensions: { width: 1024, height: 1024 }
                     };
 
