@@ -256,7 +256,6 @@ class UIManager {
      * Atualizar informações do local
      */
     updateLocationInfo(location) {
-        console.log('GEMINI_DEBUG: Location name received by UIManager:', location.name);
         document.getElementById('location-name').textContent = location.name;
         document.getElementById('location-description').textContent = location.description;
     }

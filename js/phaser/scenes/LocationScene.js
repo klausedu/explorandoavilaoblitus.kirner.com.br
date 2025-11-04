@@ -146,10 +146,10 @@ class LocationScene extends Phaser.Scene {
         const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
 
         this.locationData.hotspots.forEach(hotspot => {
-            const x = bgX + (hotspot.position.x / 100) * bgWidth;
-            const y = bgY + (hotspot.position.y / 100) * bgHeight;
-            const w = (hotspot.position.width / 100) * bgWidth;
-            const h = (hotspot.position.height / 100) * bgHeight;
+            const x = bgX + (hotspot.x / 100) * bgWidth;
+            const y = bgY + (hotspot.y / 100) * bgHeight;
+            const w = (hotspot.width / 100) * bgWidth;
+            const h = (hotspot.height / 100) * bgHeight;
 
             // Criar área interativa (invisível)
             const zone = this.add.zone(x + w / 2, y + h / 2, w, h);
