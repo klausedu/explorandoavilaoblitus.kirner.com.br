@@ -543,6 +543,7 @@
         <!-- Left Sidebar -->
         <div class="locations-sidebar">
             <div class="sidebar-header">
+                <a href="admin-panel.html" style="display: inline-block; padding: 8px 15px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 4px; margin-bottom: 15px; font-size: 14px; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">← Painel Admin</a>
                 <h2>Locais do Jogo</h2>
                 <button class="add-location-btn" onclick="addNewLocation()">+ Adicionar Novo Local</button>
                 <button class="btn btn-danger" onclick="resetEditorData()" style="width: 100%; margin-top: 10px;">🔄 Resetar Dados do Editor</button>
@@ -766,8 +767,8 @@
 
     <!-- Export Button -->
     <div class="export-section">
-        <button class="export-btn" onclick="saveToGame()" style="background: #28a745; margin-right: 10px;">💾 Salvar no Jogo</button>
-        <button class="export-btn" onclick="exportGameData()">📦 Exportar Código</button>
+        <button class="export-btn" onclick="saveToGame()" style="background: #28a745;">💾 Salvar no Jogo</button>
+        <a href="location-editor-v2.html" class="export-btn" style="background: #2196F3; text-decoration: none; display: inline-block; margin-left: 10px; text-align: center;">🚀 Editor v2 (Banco de Dados)</a>
     </div>
 
     <!-- Save Indicator -->
