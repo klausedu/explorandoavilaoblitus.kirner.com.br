@@ -22,15 +22,14 @@ if (!file_exists($mapJsPath)) {
 
 $mapJsContent = file_get_contents($mapJsPath);
 
-// Extract the gameMap object using regex
-preg_match('/const\s+gameMap\s*=\s*({.*?});/s', $mapJsContent, $matches);
+// Extract the GAME_MAP object using regex (case-insensitive)
+preg_match('/const\s+(GAME_MAP|gameMap)\s*=\s*(\{.*?\});/si', $mapJsContent, $matches);
 
-if (empty($matches[1])) {
-    die("<p style='color:red;'>Error: Could not parse gameMap from map.js</p>");
+if (empty($matches[2])) {
+    die("<p style='color:red;'>Error: Could not parse GAME_MAP from map.js</p>");
 }
 
-// Convert JS object to JSON (basic conversion)
-$jsonData = $matches[1];
+$jsonData = $matches[2];
 
 // Replace single quotes with double quotes
 $jsonData = str_replace("'", '"', $jsonData);
