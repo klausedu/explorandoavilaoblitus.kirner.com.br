@@ -37,10 +37,11 @@
     <!-- Phaser 3 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
 
-    <!-- Game Map Data (reusa o existente) -->
+    <!-- Game Map Data (fallback if database fails) -->
     <script src="js/map.js"></script>
 
     <!-- Phaser Game Managers -->
+    <script src="js/phaser/managers/DatabaseLoader.js"></script>
     <script src="js/phaser/managers/GameStateManager.js"></script>
     <script src="js/phaser/managers/UIManager.js?v=2"></script>
 

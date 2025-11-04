@@ -7,7 +7,7 @@ class BootScene extends Phaser.Scene {
         super({ key: 'BootScene' });
     }
 
-    preload() {
+    async preload() {
         // Loading bar UI
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
@@ -25,12 +25,21 @@ class BootScene extends Phaser.Scene {
         title.setOrigin(0.5);
 
         // Loading text
-        const loadingText = this.add.text(width / 2, height / 2 - 20, 'Carregando...', {
+        const loadingText = this.add.text(width / 2, height / 2 - 20, 'Carregando dados do jogo...', {
             fontSize: '24px',
             fontFamily: 'Arial',
             color: '#ffffff'
         });
         loadingText.setOrigin(0.5);
+
+        // Load game data from database first
+        try {
+            await databaseLoader.loadGameData();
+            loadingText.setText('Carregando imagens...');
+        } catch (error) {
+            console.error('Failed to load game data:', error);
+            loadingText.setText('Erro ao carregar dados!');
+        }
 
         // Progress bar background
         const progressBar = this.add.graphics();
@@ -86,17 +95,25 @@ class BootScene extends Phaser.Scene {
     }
 
     preloadLocationImages() {
-        Object.keys(GAME_MAP).forEach(locationId => {
-            const location = GAME_MAP[locationId];
-            if (location.image) {
+        // Use databaseLoader.gameMap (loaded from database or fallback to map.js)
+        const gameMapData = databaseLoader.isLoaded() ? databaseLoader.gameMap : (typeof gameMap !== 'undefined' ? gameMap : {});
+
+        Object.keys(gameMapData).forEach(locationId => {
+            const location = gameMapData[locationId];
+            if (location.background) {
+                this.load.image(locationId, location.background);
+            } else if (location.image) {
                 this.load.image(locationId, location.image);
             }
         });
     }
 
     preloadItemImages() {
-        Object.keys(GAME_MAP).forEach(locationId => {
-            const location = GAME_MAP[locationId];
+        // Use databaseLoader.gameMap (loaded from database or fallback to map.js)
+        const gameMapData = databaseLoader.isLoaded() ? databaseLoader.gameMap : (typeof gameMap !== 'undefined' ? gameMap : {});
+
+        Object.keys(gameMapData).forEach(locationId => {
+            const location = gameMapData[locationId];
             if (location.items) {
                 location.items.forEach(item => {
                     if (item.image && item.id) {

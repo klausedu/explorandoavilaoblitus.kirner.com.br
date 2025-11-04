@@ -1,0 +1,156 @@
+/**
+ * DatabaseLoader
+ * Loads game data from MySQL database via APIs
+ * Replaces the static map.js file
+ */
+class DatabaseLoader {
+    constructor() {
+        this.gameMap = {};
+        this.locations = [];
+        this.connections = [];
+        this.loaded = false;
+    }
+
+    /**
+     * Load all game data from database
+     * @returns {Promise<Object>} Game map data
+     */
+    async loadGameData() {
+        try {
+            console.log('🔄 Loading game data from database...');
+
+            const response = await fetch('api/locations/list.php');
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load game data');
+            }
+
+            this.locations = data.data.locations;
+            this.connections = data.data.connections;
+
+            // Convert to gameMap format (compatible with existing game code)
+            this.gameMap = this.convertToGameMapFormat();
+
+            // Make it globally available as GAME_MAP for backward compatibility
+            window.GAME_MAP = this.gameMap;
+
+            this.loaded = true;
+
+            console.log(`✓ Loaded ${this.locations.length} locations from database`);
+            console.log('Game Map:', this.gameMap);
+
+            return this.gameMap;
+
+        } catch (error) {
+            console.error('❌ Error loading game data:', error);
+
+            // Fallback to map.js if database fails
+            console.warn('⚠️ Falling back to map.js...');
+            return this.loadFallback();
+        }
+    }
+
+    /**
+     * Convert database format to gameMap format
+     * @returns {Object} Game map object
+     */
+    convertToGameMapFormat() {
+        const gameMap = {};
+
+        for (const location of this.locations) {
+            gameMap[location.id] = {
+                name: location.name,
+                description: location.description,
+                background: location.background_image,
+                hotspots: this.convertHotspots(location.hotspots)
+            };
+        }
+
+        return gameMap;
+    }
+
+    /**
+     * Convert database hotspots to game format
+     * @param {Array} dbHotspots Database hotspots
+     * @returns {Array} Game hotspots
+     */
+    convertHotspots(dbHotspots) {
+        return dbHotspots.map(h => {
+            const hotspot = {
+                x: h.x,
+                y: h.y,
+                width: h.width,
+                height: h.height,
+                label: h.label,
+                description: h.description
+            };
+
+            // Add type-specific properties
+            if (h.type === 'navigation' && h.target_location) {
+                hotspot.targetLocation = h.target_location;
+            } else if (h.type === 'item' && h.item_id) {
+                hotspot.item = h.item_id;
+            } else if (h.type === 'interaction' && h.interaction_data) {
+                hotspot.interaction = h.interaction_data;
+            }
+
+            return hotspot;
+        });
+    }
+
+    /**
+     * Fallback to map.js if database fails
+     * @returns {Object} Game map from map.js
+     */
+    loadFallback() {
+        if (typeof gameMap !== 'undefined') {
+            console.log('✓ Using fallback map.js');
+            this.gameMap = gameMap;
+            this.loaded = true;
+            return gameMap;
+        } else {
+            console.error('❌ No fallback available! map.js not found.');
+            return {};
+        }
+    }
+
+    /**
+     * Get a specific location
+     * @param {string} locationId Location ID
+     * @returns {Object|null} Location data
+     */
+    getLocation(locationId) {
+        return this.gameMap[locationId] || null;
+    }
+
+    /**
+     * Check if game data is loaded
+     * @returns {boolean}
+     */
+    isLoaded() {
+        return this.loaded;
+    }
+
+    /**
+     * Get all location IDs
+     * @returns {Array<string>}
+     */
+    getLocationIds() {
+        return Object.keys(this.gameMap);
+    }
+
+    /**
+     * Get connections for a location
+     * @param {string} locationId
+     * @returns {Array<string>}
+     */
+    getConnections(locationId) {
+        return this.connections
+            .filter(c => c.from_location === locationId)
+            .map(c => c.to_location);
+    }
+}
+
+// Create global instance
+const databaseLoader = new DatabaseLoader();
