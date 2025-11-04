@@ -33,7 +33,7 @@
         /* Logout Button */
         #logout-btn {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             padding: 10px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -49,6 +49,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            pointer-events: auto;
         }
 
         #logout-btn:hover {
@@ -62,7 +63,7 @@
 
         #user-info {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             left: 20px;
             padding: 10px 16px;
             background: rgba(255, 255, 255, 0.1);
@@ -75,6 +76,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            pointer-events: none;
         }
 
         #user-info .username {
