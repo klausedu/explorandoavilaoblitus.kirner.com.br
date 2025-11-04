@@ -765,11 +765,9 @@
         </div>
     </div>
 
-    <!-- Export Button -->
+    <!-- Save Button -->
     <div class="export-section">
-        <button class="export-btn" onclick="saveToGame()" style="background: #28a745;">💾 Salvar Local</button>
-        <button class="export-btn" onclick="loadFromDatabase()" style="background: #2196F3;">🔄 Carregar do Banco</button>
-        <button class="export-btn" onclick="syncToDatabase()" style="background: #ff9800;">☁️ Sincronizar com Banco</button>
+        <button class="export-btn" onclick="syncToDatabase()" style="background: #28a745;">💾 Salvar</button>
     </div>
 
     <!-- Save Indicator -->
@@ -828,10 +826,10 @@
         }
 
         // Initialize
-        window.onload = function() {
+        window.onload = async function() {
             initializeLocationOrder();
             renderLocationsList();
-            loadFromLocalStorage();
+            await loadFromDatabase(true); // Carrega automaticamente do banco
         };
 
         // Initialize location order
@@ -3030,12 +3028,12 @@ if (typeof module !== 'undefined' && module.exports) {
         // DATABASE SYNC FUNCTIONS
         // ============================================
 
-        async function loadFromDatabase() {
-            if (!confirm('Carregar dados do banco MySQL? Isso vai substituir os dados locais atuais.')) {
-                return;
+        async function loadFromDatabase(auto = false) {
+            if (!auto) {
+                showToast('🔄 Carregando do banco...', 'info');
+            } else {
+                console.log('🔄 Carregamento automático do banco...');
             }
-
-            showToast('🔄 Carregando do banco...', 'info');
 
             try {
                 const response = await fetch('api/locations/list.php');
@@ -3049,8 +3047,14 @@ if (typeof module !== 'undefined' && module.exports) {
                 const locations = result.data.locations;
 
                 if (locations.length === 0) {
-                    showToast('⚠️ Banco está vazio. Execute migrate-ui.html primeiro!', 'error');
-                    return;
+                    if (!auto) {
+                        showToast('⚠️ Banco está vazio. Execute migrate-ui.html primeiro!', 'error');
+                        return;
+                    } else {
+                        console.warn('Banco vazio, usando dados locais');
+                        await loadFromLocalStorage();
+                        return;
+                    }
                 }
 
                 // Convert API format to editor format
@@ -3096,11 +3100,23 @@ if (typeof module !== 'undefined' && module.exports) {
                 });
 
                 renderLocationsList();
-                showToast(`✅ ${locations.length} localizações carregadas do banco!`);
+
+                if (!auto) {
+                    showToast(`✅ ${locations.length} localizações carregadas do banco!`);
+                } else {
+                    console.log(`✅ ${locations.length} localizações carregadas do banco`);
+                }
 
             } catch (error) {
                 console.error('Load error:', error);
-                showToast('❌ Erro ao carregar: ' + error.message, 'error');
+                if (!auto) {
+                    showToast('❌ Erro ao carregar: ' + error.message, 'error');
+                }
+                // Se auto e falhar, tenta carregar do IndexedDB
+                if (auto) {
+                    console.warn('Banco vazio ou erro, usando dados locais');
+                    await loadFromLocalStorage();
+                }
             }
         }
 
