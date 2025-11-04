@@ -148,7 +148,7 @@ const GAME_MAP = {
             },
             {
                 "id": "hotspot_1762217435547",
-                "name": "Casa Abandonada",
+                "name": "Casa Abandonada...",
                 "action": "navigate",
                 "target": "casa_abandonada_02_frente",
                 "position": {
@@ -160,7 +160,7 @@ const GAME_MAP = {
             },
             {
                 "id": "hotspot_1762217467877",
-                "name": "Casa Abandonada",
+                "name": "Casa Abandonada...",
                 "action": "navigate",
                 "target": "casa_abandonada_01_frente",
                 "position": {
