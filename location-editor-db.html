@@ -3170,16 +3170,18 @@ if (typeof module !== 'undefined' && module.exports) {
                 return;
             }
 
-            console.log('💾 Iniciando sincronização com banco...', gameLocations);
-            showToast('☁️ Sincronizando com banco...', 'info');
+            console.log('💾 Iniciando sincronização em LOTE (bulk save)...');
+            showToast('☁️ Sincronizando TODAS as localizações de uma vez...', 'info');
 
-            let successCount = 0;
-            let errorCount = 0;
+            const startTime = Date.now();
 
-            for (const locationId in gameLocations) {
-                const loc = gameLocations[locationId];
+            try {
+                // Converter TODAS as localizações de uma vez
+                const allLocations = [];
 
-                try {
+                for (const locationId in gameLocations) {
+                    const loc = gameLocations[locationId];
+
                     // Convert editor format to API format
                     const hotspots = (loc.hotspots || []).map(h => ({
                         type: h.action === 'navigate' ? 'navigation' : h.action === 'item' ? 'item' : 'interaction',
@@ -3193,50 +3195,47 @@ if (typeof module !== 'undefined' && module.exports) {
                         item_id: h.item || null
                     }));
 
-                    const payload = {
+                    allLocations.push({
                         id: loc.id,
                         name: loc.name,
                         description: loc.description || 'Descrição...',
                         background_image: loc.image || '',
                         hotspots: hotspots
-                    };
-
-                    console.log(`📤 Salvando ${locationId}:`, payload);
-
-                    const response = await fetch('api/locations/save.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
                     });
-
-                    if (!response.ok) {
-                        const text = await response.text();
-                        console.error(`❌ HTTP ${response.status} em ${locationId}:`, text);
-                        errorCount++;
-                        continue;
-                    }
-
-                    const result = await response.json();
-                    console.log(`📨 Resposta da API para ${locationId}:`, result);
-
-                    if (result.success) {
-                        console.log(`✅ ${locationId} salvo com sucesso!`);
-                        successCount++;
-                    } else {
-                        console.error(`❌ Erro em ${locationId}:`, result.message);
-                        errorCount++;
-                    }
-
-                } catch (error) {
-                    console.error(`Erro em ${locationId}:`, error);
-                    errorCount++;
                 }
-            }
 
-            if (errorCount === 0) {
-                showToast(`✅ ${successCount} localizações sincronizadas com sucesso!`);
-            } else {
-                showToast(`⚠️ Sincronizado: ${successCount} OK, ${errorCount} erros`, 'warning');
+                console.log(`📤 Enviando ${allLocations.length} localizações em uma única requisição...`);
+
+                // UMA ÚNICA REQUISIÇÃO para TODAS as localizações!
+                const response = await fetch('api/locations/bulk-save.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ locations: allLocations })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error(`❌ HTTP ${response.status}:`, text);
+                    showToast('❌ Erro ao salvar: ' + text.substring(0, 100), 'error');
+                    return;
+                }
+
+                const result = await response.json();
+                console.log(`📨 Resposta da API:`, result);
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                if (result.success) {
+                    console.log(`✅ Sucesso! ${result.data.locations} localizações, ${result.data.hotspots} hotspots em ${elapsed}s`);
+                    showToast(`✅ ${result.data.locations} localizações e ${result.data.hotspots} hotspots salvos em ${elapsed}s!`, 'success');
+                } else {
+                    console.error(`❌ Erro:`, result.message);
+                    showToast(`❌ Erro: ${result.message}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('❌ Erro ao sincronizar:', error);
+                showToast('❌ Erro ao sincronizar: ' + error.message, 'error');
             }
         }
 

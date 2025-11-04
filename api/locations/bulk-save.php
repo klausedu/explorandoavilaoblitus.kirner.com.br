@@ -1,0 +1,123 @@
+<?php
+/**
+ * API: Bulk Save - Salva TODAS as localizações de uma vez
+ * Muito mais rápido que salvar uma por uma
+ */
+
+error_log("🔔 BULK SAVE API - Requisição recebida!");
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
+
+require_once '../config.php';
+
+// Get database connection
+$pdo = getDBConnection();
+
+// Get raw input
+$rawInput = file_get_contents('php://input');
+$input = json_decode($rawInput, true);
+
+if (!$input || !isset($input['locations'])) {
+    error_log("❌ BULK SAVE - JSON inválido ou sem locations");
+    sendResponse(false, null, 'Invalid data. Expected locations array.', 400);
+}
+
+$locations = $input['locations'];
+$totalLocations = count($locations);
+
+error_log("📥 BULK SAVE - Recebendo $totalLocations localizações");
+
+try {
+    // Start transaction - tudo ou nada!
+    $pdo->beginTransaction();
+
+    $successCount = 0;
+    $hotspotCount = 0;
+
+    // Prepared statements (reutilizáveis)
+    $locationStmt = $pdo->prepare("
+        INSERT INTO locations (id, name, description, background_image)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            description = VALUES(description),
+            background_image = VALUES(background_image),
+            updated_at = CURRENT_TIMESTAMP
+    ");
+
+    $deleteHotspotsStmt = $pdo->prepare("DELETE FROM hotspots WHERE location_id = ?");
+
+    $hotspotStmt = $pdo->prepare("
+        INSERT INTO hotspots
+        (location_id, type, x, y, width, height, label, description, target_location, item_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    // Processar todas as localizações
+    foreach ($locations as $loc) {
+        $locationId = $loc['id'];
+        $name = $loc['name'] ?? '';
+        $description = $loc['description'] ?? '';
+        $backgroundImage = $loc['background_image'] ?? '';
+
+        if (empty($locationId) || empty($name)) {
+            error_log("⚠️ BULK SAVE - Localização sem id ou name: " . json_encode($loc));
+            continue;
+        }
+
+        // Insert/Update location
+        $locationStmt->execute([$locationId, $name, $description, $backgroundImage]);
+        $successCount++;
+
+        // Delete old hotspots
+        $deleteHotspotsStmt->execute([$locationId]);
+
+        // Insert new hotspots
+        if (!empty($loc['hotspots'])) {
+            foreach ($loc['hotspots'] as $hotspot) {
+                $type = $hotspot['type'] ?? 'navigation';
+                $x = $hotspot['x'] ?? 0;
+                $y = $hotspot['y'] ?? 0;
+                $width = $hotspot['width'] ?? 10;
+                $height = $hotspot['height'] ?? 10;
+                $label = $hotspot['label'] ?? null;
+                $description = $hotspot['description'] ?? null;
+                $targetLocation = $hotspot['target_location'] ?? null;
+                $itemId = $hotspot['item_id'] ?? null;
+
+                $hotspotStmt->execute([
+                    $locationId,
+                    $type,
+                    $x,
+                    $y,
+                    $width,
+                    $height,
+                    $label,
+                    $description,
+                    $targetLocation,
+                    $itemId
+                ]);
+                $hotspotCount++;
+            }
+        }
+    }
+
+    // Commit tudo de uma vez!
+    $pdo->commit();
+
+    error_log("✅ BULK SAVE - Sucesso! $successCount localizações, $hotspotCount hotspots");
+
+    sendResponse(true, [
+        'locations' => $successCount,
+        'hotspots' => $hotspotCount
+    ], "Saved $successCount locations and $hotspotCount hotspots successfully");
+
+} catch (PDOException $e) {
+    // Rollback em caso de erro
+    $pdo->rollBack();
+    error_log("❌ BULK SAVE - Erro: " . $e->getMessage());
+    sendResponse(false, null, 'Database error: ' . $e->getMessage(), 500);
+}
