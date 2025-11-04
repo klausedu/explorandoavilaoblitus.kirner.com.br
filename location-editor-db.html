@@ -3128,7 +3128,18 @@ if (typeof module !== 'undefined' && module.exports) {
         }
 
         async function syncToDatabase() {
+            console.log('🔔 FUNÇÃO syncToDatabase() CHAMADA!');
+            console.log('📊 gameLocations:', gameLocations);
+            console.log('📊 Total de localizações:', Object.keys(gameLocations).length);
+
+            if (Object.keys(gameLocations).length === 0) {
+                alert('❌ Nenhuma localização para salvar! gameLocations está vazio.');
+                console.error('❌ gameLocations está vazio!');
+                return;
+            }
+
             if (!confirm(`Sincronizar ${Object.keys(gameLocations).length} localizações com o banco MySQL?`)) {
+                console.log('⚠️ Usuário cancelou a sincronização');
                 return;
             }
 

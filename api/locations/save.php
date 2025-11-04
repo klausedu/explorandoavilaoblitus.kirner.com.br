@@ -4,6 +4,8 @@
  * Handles complete location data including hotspots
  */
 
+error_log("🔔 SAVE API - Requisição recebida! Method: " . $_SERVER['REQUEST_METHOD']);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, PUT');
@@ -14,13 +16,18 @@ require_once '../config.php';
 // Get database connection
 $pdo = getDBConnection();
 
+// Get raw input first for debugging
+$rawInput = file_get_contents('php://input');
+error_log("📥 SAVE API - Raw input: " . substr($rawInput, 0, 500));
+
 // Get JSON input
-$input = json_decode(file_get_contents('php://input'), true);
+$input = json_decode($rawInput, true);
 
 // Debug log
-error_log("📥 SAVE API - Recebendo dados: " . json_encode($input));
+error_log("📥 SAVE API - Parsed JSON: " . json_encode($input));
 
 if (!$input) {
+    error_log("❌ SAVE API - JSON inválido ou vazio!");
     sendResponse(false, null, 'Invalid JSON data', 400);
 }
 
