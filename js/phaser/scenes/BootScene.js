@@ -115,6 +115,8 @@ class BootScene extends Phaser.Scene {
         });
     }
 
+    preloadItemImages() {
+        // Use databaseLoader.gameMap (loaded from database or fallback to map.js)
         const gameMapData = databaseLoader.isLoaded() ? databaseLoader.gameMap : (typeof gameMap !== 'undefined' ? gameMap : {});
         console.log('GEMINI_DEBUG: gameMapData for preloadItemImages:', gameMapData);
 
