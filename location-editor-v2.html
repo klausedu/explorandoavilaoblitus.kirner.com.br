@@ -331,18 +331,79 @@
         });
 
         async function loadLocations() {
+            const listEl = document.getElementById('locationList');
+
             try {
                 const response = await fetch('api/locations/list.php');
-                const data = await response.json();
+
+                // Check if response is ok
+                if (!response.ok) {
+                    const text = await response.text();
+                    listEl.innerHTML = `
+                        <div class="empty-state" style="color: #f44336;">
+                            <h3>❌ Erro HTTP ${response.status}</h3>
+                            <p style="font-size: 12px; margin-top: 10px;">${text.substring(0, 200)}</p>
+                            <p style="margin-top: 15px; font-size: 13px;">
+                                <strong>Verifique:</strong><br>
+                                1. Banco de dados configurado em api/config.php<br>
+                                2. Tabelas criadas (execute database.sql)<br>
+                                3. Execute a migração: <a href="migrate-ui.html" style="color: #4CAF50;">migrate-ui.html</a>
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const text = await response.text();
+
+                // Try to parse JSON
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    listEl.innerHTML = `
+                        <div class="empty-state" style="color: #f44336;">
+                            <h3>❌ Resposta inválida da API</h3>
+                            <p style="font-size: 12px; margin-top: 10px;">A API não retornou JSON válido</p>
+                            <details style="margin-top: 10px; text-align: left;">
+                                <summary style="cursor: pointer; color: #f0a500;">Ver resposta completa</summary>
+                                <pre style="font-size: 10px; background: #000; padding: 10px; overflow: auto; max-height: 200px; margin-top: 5px;">${text.substring(0, 500)}</pre>
+                            </details>
+                            <p style="margin-top: 15px; font-size: 13px;">
+                                <strong>Verifique:</strong><br>
+                                1. Banco de dados configurado em api/config.php<br>
+                                2. Tabelas criadas (execute database.sql)<br>
+                                3. Execute a migração: <a href="migrate-ui.html" style="color: #4CAF50;">migrate-ui.html</a>
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
 
                 if (data.success) {
                     allLocations = data.data.locations;
                     renderLocationList();
                 } else {
                     showMessage('Erro ao carregar localizações: ' + data.message, 'error');
+                    listEl.innerHTML = `
+                        <div class="empty-state" style="color: #ff9800;">
+                            <h3>⚠️ ${data.message}</h3>
+                            <p style="margin-top: 15px;">Execute a migração para importar dados do map.js</p>
+                            <a href="migrate-ui.html" style="color: #4CAF50; text-decoration: underline;">→ Ir para Migração</a>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 showMessage('Erro de conexão: ' + error.message, 'error');
+                listEl.innerHTML = `
+                    <div class="empty-state" style="color: #f44336;">
+                        <h3>❌ Erro de Conexão</h3>
+                        <p style="margin-top: 10px;">${error.message}</p>
+                        <p style="margin-top: 15px; font-size: 13px;">
+                            Verifique se o servidor está rodando e se o banco está configurado.
+                        </p>
+                    </div>
+                `;
             }
         }
 
@@ -504,7 +565,24 @@
                     body: JSON.stringify(currentLocation)
                 });
 
-                const data = await response.json();
+                // Check response status
+                if (!response.ok) {
+                    const text = await response.text();
+                    showMessage(`Erro HTTP ${response.status}: ${text.substring(0, 100)}`, 'error');
+                    console.error('Response:', text);
+                    return;
+                }
+
+                const text = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    showMessage('Erro: API retornou resposta inválida', 'error');
+                    console.error('Invalid JSON:', text);
+                    return;
+                }
 
                 if (data.success) {
                     showMessage('✓ Localização salva com sucesso!', 'success');
@@ -514,6 +592,7 @@
                 }
             } catch (error) {
                 showMessage('Erro de conexão: ' + error.message, 'error');
+                console.error('Save error:', error);
             }
         }
 
