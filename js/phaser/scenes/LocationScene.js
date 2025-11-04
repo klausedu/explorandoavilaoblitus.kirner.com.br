@@ -367,6 +367,7 @@ class LocationScene extends Phaser.Scene {
     }
 
     handleHotspotClick(hotspot) {
+        console.log('GEMINI_DEBUG: Hotspot clicked:', hotspot);
         switch (hotspot.action) {
             case 'navigate':
                 this.navigateToLocation(hotspot.target, hotspot);
@@ -390,6 +391,7 @@ class LocationScene extends Phaser.Scene {
     }
 
     navigateToLocation(targetLocationId, hotspot) {
+        console.log('GEMINI_DEBUG: Navigating to:', targetLocationId);
         const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
 
         const centerX = bgX + ((hotspot.position.x + hotspot.position.width / 2) / 100) * bgWidth;
