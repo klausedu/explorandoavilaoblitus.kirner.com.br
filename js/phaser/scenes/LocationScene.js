@@ -367,9 +367,15 @@ class LocationScene extends Phaser.Scene {
     }
 
     handleHotspotClick(hotspot) {
+        console.log('🖱️ Clique no hotspot:', hotspot);
+
         switch (hotspot.action) {
             case 'navigate':
-                this.navigateToLocation(hotspot.target, hotspot);
+            case 'navigation':
+                // Aceitar ambos target e targetLocation para compatibilidade
+                const targetId = hotspot.targetLocation || hotspot.target;
+                console.log('➡️ Navegando para:', targetId);
+                this.navigateToLocation(targetId, hotspot);
                 break;
 
             case 'puzzle':
