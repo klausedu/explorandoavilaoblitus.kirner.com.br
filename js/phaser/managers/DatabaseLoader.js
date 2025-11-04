@@ -74,11 +74,12 @@ class DatabaseLoader {
 
         for (const location of this.locations) {
             gameMap[location.id] = {
+                id: location.id,
                 name: location.name,
                 description: location.description,
-                background: location.background_image,
+                image: location.background_image,
                 hotspots: this.convertHotspots(location.hotspots),
-                items: location.items
+                items: location.items || []
             };
         }
 
@@ -91,23 +92,28 @@ class DatabaseLoader {
      * @returns {Array} Game hotspots
      */
     convertHotspots(dbHotspots) {
+        if (!dbHotspots) return [];
         return dbHotspots.map(h => {
             const hotspot = {
-                x: h.x,
-                y: h.y,
-                width: h.width,
-                height: h.height,
+                id: h.id,
                 label: h.label,
-                description: h.description
+                action: h.type, // Map 'type' to 'action'
+                position: {
+                    x: parseFloat(h.x),
+                    y: parseFloat(h.y),
+                    width: parseFloat(h.width),
+                    height: parseFloat(h.height)
+                },
+                zoomDirection: h.zoom_direction
             };
 
             // Add type-specific properties
-            if (h.type === 'navigation' && h.target_location) {
-                hotspot.targetLocation = h.target_location;
+            if (h.type === 'navigate' && h.target_location) {
+                hotspot.target = h.target_location; // Map to 'target'
             } else if (h.type === 'item' && h.item_id) {
-                hotspot.item = h.item_id;
-            } else if (h.type === 'interaction' && h.interaction_data) {
-                hotspot.interaction = h.interaction_data;
+                hotspot.itemId = h.item_id;
+            } else if (h.type === 'puzzle' && h.puzzle_id) {
+                hotspot.puzzleId = h.puzzle_id;
             }
 
             return hotspot;
