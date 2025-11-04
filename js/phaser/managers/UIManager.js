@@ -56,10 +56,12 @@ class UIManager {
         const username = localStorage.getItem('username') || 'Jogador';
         const isAdmin = localStorage.getItem('is_admin') === 'true';
         const adminBadge = isAdmin ? '<span style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px;">ADMIN</span>' : '';
+        const adminButton = isAdmin ? '<a href="admin-panel.html" style="color: #f0a500; font-size: 14px; text-decoration: none; margin-left: 15px; padding: 5px 12px; border: 1px solid #f0a500; border-radius: 4px; transition: all 0.3s;" onmouseover="this.style.background=\'rgba(240,165,0,0.2)\'" onmouseout="this.style.background=\'transparent\'">← Admin</a>' : '';
 
         topBar.innerHTML = `
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div style="color: #f0a500; font-size: 18px; font-weight: 600;">Vila Abandonada</div>
+                ${adminButton}
                 <div style="color: #ccc; font-size: 14px; display: flex; align-items: center;">
                     👤 <span id="username-display" style="margin-left: 5px;">${username}</span>${adminBadge}
                 </div>
