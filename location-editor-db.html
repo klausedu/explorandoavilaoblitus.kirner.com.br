@@ -3240,12 +3240,14 @@ if (typeof module !== 'undefined' && module.exports) {
                         y: item.position.y,
                         width: item.size.width,
                         height: item.size.height,
-                        rotate_x: item.transform.rotateX,
-                        rotate_y: item.transform.rotateY,
-                        rotation: item.transform.rotation,
-                        scale_x: item.transform.scaleX,
-                        scale_y: item.transform.scaleY,
-                        opacity: item.transform.opacity
+                        rotate_x: item.transform?.rotateX || 0,
+                        rotate_y: item.transform?.rotateY || 0,
+                        rotation: item.transform?.rotation || 0,
+                        scale_x: item.transform?.scaleX || 1,
+                        scale_y: item.transform?.scaleY || 1,
+                        skew_x: item.transform?.skewX || 0,
+                        skew_y: item.transform?.skewY || 0,
+                        opacity: item.transform?.opacity || 1
                     }));
 
                     // Combinar hotspots de navegação + items
