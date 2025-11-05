@@ -253,66 +253,48 @@ class LocationScene extends Phaser.Scene {
                 img.style.width = (item.size?.width || 80) + 'px';
                 img.style.height = (item.size?.height || 80) + 'px';
                 img.style.pointerEvents = 'auto';
-                img.style.opacity = transform.opacity ?? 1; // Aplicar opacidade aqui
 
                 // Criar DOMElement
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Aplicar perspectiva
+                // Aplicar perspectiva para rotações 3D
                 element.setPerspective(800);
 
-                // Aplicar rotação 3D via Phaser API (não CSS!)
-                const rotX = transform.rotateX || 0;
-                const rotY = transform.rotateY || 0;
+                // Construir string de transform CSS (EXATAMENTE como o editor)
+                const transforms = [];
 
-                if (rotX !== 0 && rotY !== 0) {
-                    // Ambas rotações - usar apenas rotX (limitação do Phaser)
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotX !== 0) {
-                    // Rotação no eixo X
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotY !== 0) {
-                    // Rotação no eixo Y
-                    element.rotate3d.set(0, 1, 0, rotY);
-                }
+                // Rotação Z (2D)
+                transforms.push(`rotateZ(${transform.rotation || 0}deg)`);
 
-                // Transformações 2D via CSS (rotation, scale, skew)
-                // Aplicar uma por uma, concatenando (como na versão que funcionava)
+                // Rotações 3D
+                transforms.push(`rotateX(${transform.rotateX || 0}deg)`);
+                transforms.push(`rotateY(${transform.rotateY || 0}deg)`);
 
-                // Rotação 2D (Z axis)
-                if (transform.rotation) {
-                    img.style.transform = `rotate(${transform.rotation}deg)`;
-                }
+                // Escala (com flip integrado)
+                const scaleX = (transform.scaleX || 1) * (transform.flipX ? -1 : 1);
+                const scaleY = (transform.scaleY || 1) * (transform.flipY ? -1 : 1);
+                transforms.push(`scaleX(${scaleX})`);
+                transforms.push(`scaleY(${scaleY})`);
 
-                // Escala
-                const scaleX = transform.scaleX || 1;
-                const scaleY = transform.scaleY || 1;
-                if (scaleX !== 1 || scaleY !== 1) {
-                    const currentTransform = img.style.transform || '';
-                    img.style.transform = currentTransform + ` scale(${scaleX}, ${scaleY})`;
-                }
+                // Skew (distorção)
+                transforms.push(`skewX(${transform.skewX || 0}deg)`);
+                transforms.push(`skewY(${transform.skewY || 0}deg)`);
 
-                // Flip
-                if (transform.flipX || transform.flipY) {
-                    const flipX = transform.flipX ? -1 : 1;
-                    const flipY = transform.flipY ? -1 : 1;
-                    const currentTransform = img.style.transform || '';
-                    img.style.transform = currentTransform + ` scaleX(${flipX}) scaleY(${flipY})`;
-                }
+                // Aplicar todas as transformações de uma vez
+                img.style.transform = transforms.join(' ');
 
-                // Skew
-                if (transform.skewX || transform.skewY) {
-                    const currentTransform = img.style.transform || '';
-                    const skewTransforms = [];
-                    if (transform.skewX) skewTransforms.push(`skewX(${transform.skewX}deg)`);
-                    if (transform.skewY) skewTransforms.push(`skewY(${transform.skewY}deg)`);
-                    img.style.transform = currentTransform + ` ${skewTransforms.join(' ')}`;
-                }
+                // Aplicar opacidade via CSS
+                img.style.opacity = transform.opacity ?? 1;
 
-                // Aplicar opacidade via Phaser setAlpha
-                if (transform.opacity !== undefined) {
-                    element.setAlpha(transform.opacity);
+                // Aplicar sombra via CSS filter (drop-shadow)
+                const shadowBlur = transform.shadowBlur || 0;
+                const shadowX = transform.shadowOffsetX || 0;
+                const shadowY = transform.shadowOffsetY || 0;
+                if (shadowBlur > 0) {
+                    img.style.filter = `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.5))`;
+                } else {
+                    img.style.filter = 'none';
                 }
 
                 // Salvar transform original para hover
