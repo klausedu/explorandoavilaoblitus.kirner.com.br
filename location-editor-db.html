@@ -3092,6 +3092,7 @@ if (typeof module !== 'undefined' && module.exports) {
                     const items = [];
 
                     (loc.hotspots || []).forEach(h => {
+                        console.log('Hotspot data from DB:', h);
                         if (h.type === 'item' && h.item_id) {
                             // Este é um item, não um hotspot de navegação
                             items.push({
