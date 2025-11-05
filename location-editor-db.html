@@ -3242,14 +3242,19 @@ if (typeof module !== 'undefined' && module.exports) {
                         y: item.position.y,
                         width: item.size.width,
                         height: item.size.height,
+                        rotation: item.transform?.rotation || 0,
                         rotate_x: item.transform?.rotateX || 0,
                         rotate_y: item.transform?.rotateY || 0,
-                        rotation: item.transform?.rotation || 0,
                         scale_x: item.transform?.scaleX || 1,
                         scale_y: item.transform?.scaleY || 1,
                         skew_x: item.transform?.skewX || 0,
                         skew_y: item.transform?.skewY || 0,
-                        opacity: item.transform?.opacity || 1
+                        flip_x: item.transform?.flipX ? 1 : 0,
+                        flip_y: item.transform?.flipY ? 1 : 0,
+                        opacity: item.transform?.opacity || 1,
+                        shadow_blur: item.transform?.shadowBlur || 0,
+                        shadow_offset_x: item.transform?.shadowOffsetX || 0,
+                        shadow_offset_y: item.transform?.shadowOffsetY || 0
                     }));
 
                     // Combinar hotspots de navegação + items
