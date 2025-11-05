@@ -278,27 +278,28 @@ class LocationScene extends Phaser.Scene {
                 const transforms = [];
 
                 // Rotação 2D (Z axis)
-                if (transform.rotation) {
-                    transforms.push(`rotate(${transform.rotation}deg)`);
+                const rotation = transform.rotation || 0;
+                if (rotation !== 0) {
+                    transforms.push(`rotate(${rotation}deg)`);
                 }
 
                 // Escala (com flip integrado)
-                const scaleX = (transform.scaleX || 1) * (transform.flipX ? -1 : 1);
-                const scaleY = (transform.scaleY || 1) * (transform.flipY ? -1 : 1);
-                if (scaleX !== 1 || scaleY !== 1) {
-                    transforms.push(`scale(${scaleX}, ${scaleY})`);
-                }
+                const baseScaleX = transform.scaleX || 1;
+                const baseScaleY = transform.scaleY || 1;
+                const flipX = transform.flipX ? -1 : 1;
+                const flipY = transform.flipY ? -1 : 1;
+                const finalScaleX = baseScaleX * flipX;
+                const finalScaleY = baseScaleY * flipY;
+                transforms.push(`scale(${finalScaleX}, ${finalScaleY})`);
 
                 // Skew (distorção)
-                if (transform.skewX || transform.skewY) {
-                    if (transform.skewX) transforms.push(`skewX(${transform.skewX}deg)`);
-                    if (transform.skewY) transforms.push(`skewY(${transform.skewY}deg)`);
-                }
+                const skewX = transform.skewX || 0;
+                const skewY = transform.skewY || 0;
+                if (skewX !== 0) transforms.push(`skewX(${skewX}deg)`);
+                if (skewY !== 0) transforms.push(`skewY(${skewY}deg)`);
 
-                // Aplicar transformações CSS (apenas 2D!)
-                if (transforms.length > 0) {
-                    img.style.transform = transforms.join(' ');
-                }
+                // Aplicar transformações CSS (sempre aplicar!)
+                img.style.transform = transforms.join(' ');
 
                 // Aplicar opacidade via CSS
                 img.style.opacity = transform.opacity ?? 1;
