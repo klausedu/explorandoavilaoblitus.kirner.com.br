@@ -3208,7 +3208,7 @@ if (typeof module !== 'undefined' && module.exports) {
                     const loc = gameLocations[locationId];
 
                     // Convert editor format to API format
-                    const hotspots = (loc.hotspots || []).map(h => ({
+                    const navigationHotspots = (loc.hotspots || []).map(h => ({
                         type: h.action === 'navigate' ? 'navigation' : h.action === 'item' ? 'item' : 'interaction',
                         x: h.position?.x || 0,
                         y: h.position?.y || 0,
@@ -3221,37 +3221,26 @@ if (typeof module !== 'undefined' && module.exports) {
                     }));
 
                     // IMPORTANTE: Converter items para hotspots do tipo 'item'
-                // Preparar dados para o servidor
-                const payload = {
-                    locations: Object.values(gameLocations).map(location => {
-                        const newLocation = { ...location };
-                        if (newLocation.items) {
-                            const itemHotspots = newLocation.items.map(item => ({
-                                type: 'item',
-                                item_id: item.id,
-                                label: item.name,
-                                description: item.description,
-                                item_image: item.image,
-                                x: item.position.x,
-                                y: item.position.y,
-                                width: item.size.width,
-                                height: item.size.height,
-                                rotate_x: item.transform.rotateX,
-                                rotate_y: item.transform.rotateY,
-                                rotation: item.transform.rotation,
-                                scale_x: item.transform.scaleX,
-                                scale_y: item.transform.scaleY,
-                                opacity: item.transform.opacity
-                            }));
-                            newLocation.hotspots = (newLocation.hotspots || []).concat(itemHotspots);
-                        }
-                        return newLocation;
-                    }),
-                    connections: [] // Connections are part of location hotspots now
-                };
+                    const itemHotspots = (loc.items || []).map(item => ({
+                        type: 'item',
+                        item_id: item.id,
+                        label: item.name,
+                        description: item.description,
+                        item_image: item.image,
+                        x: item.position.x,
+                        y: item.position.y,
+                        width: item.size.width,
+                        height: item.size.height,
+                        rotate_x: item.transform.rotateX,
+                        rotate_y: item.transform.rotateY,
+                        rotation: item.transform.rotation,
+                        scale_x: item.transform.scaleX,
+                        scale_y: item.transform.scaleY,
+                        opacity: item.transform.opacity
+                    }));
 
                     // Combinar hotspots de navegação + items
-                    const allHotspots = [...hotspots, ...itemHotspots];
+                    const allHotspots = [...navigationHotspots, ...itemHotspots];
 
                     allLocations.push({
                         id: loc.id,
