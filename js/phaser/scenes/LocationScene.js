@@ -299,7 +299,14 @@ class LocationScene extends Phaser.Scene {
                 if (skewY !== 0) transforms.push(`skewY(${skewY}deg)`);
 
                 // Aplicar transformações CSS (sempre aplicar!)
-                img.style.transform = transforms.join(' ');
+                const transformString = transforms.join(' ');
+                img.style.transform = transformString;
+
+                // DEBUG
+                console.log('🎨 Item:', item.id);
+                console.log('  Transform object:', transform);
+                console.log('  CSS transform:', transformString);
+                console.log('  Applied to img:', img.style.transform);
 
                 // Aplicar opacidade via CSS
                 img.style.opacity = transform.opacity ?? 1;
