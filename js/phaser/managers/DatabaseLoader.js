@@ -94,11 +94,11 @@ class DatabaseLoader {
                             height: parseFloat(h.height)
                         },
                         transform: {
-                            rotateX: parseFloat(h.rotateX) || 0,
-                            rotateY: parseFloat(h.rotateY) || 0,
+                            rotateX: parseFloat(h.rotate_x) || 0,
+                            rotateY: parseFloat(h.rotate_y) || 0,
                             rotation: parseFloat(h.rotation) || 0,
-                            scaleX: parseFloat(h.scaleX) || 1,
-                            scaleY: parseFloat(h.scaleY) || 1,
+                            scaleX: parseFloat(h.scale_x) || 1,
+                            scaleY: parseFloat(h.scale_y) || 1,
                             opacity: parseFloat(h.opacity) ?? 1
                         }
                     });

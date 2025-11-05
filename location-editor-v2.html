@@ -526,12 +526,24 @@
             const target = prompt('Target Location:', h.target_location || '');
             const x = parseFloat(prompt('X:', h.x));
             const y = parseFloat(prompt('Y:', h.y));
+            const rotateX = parseFloat(prompt('Rotate X:', h.rotate_x || 0));
+            const rotateY = parseFloat(prompt('Rotate Y:', h.rotate_y || 0));
+            const rotation = parseFloat(prompt('Rotation (2D):', h.rotation || 0));
+            const scaleX = parseFloat(prompt('Scale X:', h.scale_x || 1));
+            const scaleY = parseFloat(prompt('Scale Y:', h.scale_y || 1));
+            const opacity = parseFloat(prompt('Opacity:', h.opacity || 1));
 
             h.label = label;
             h.type = type || 'navigation';
             h.target_location = target;
             h.x = isNaN(x) ? h.x : x;
             h.y = isNaN(y) ? h.y : y;
+            h.rotate_x = isNaN(rotateX) ? h.rotate_x : rotateX;
+            h.rotate_y = isNaN(rotateY) ? h.rotate_y : rotateY;
+            h.rotation = isNaN(rotation) ? h.rotation : rotation;
+            h.scale_x = isNaN(scaleX) ? h.scale_x : scaleX;
+            h.scale_y = isNaN(scaleY) ? h.scale_y : scaleY;
+            h.opacity = isNaN(opacity) ? h.opacity : opacity;
 
             renderHotspots();
         }
