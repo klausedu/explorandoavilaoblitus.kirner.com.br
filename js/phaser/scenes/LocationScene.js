@@ -245,21 +245,24 @@ class LocationScene extends Phaser.Scene {
             const transform = item.transform || {};
             let element;
 
-            // Se tem rotação 3D, usar DOMElement
-            if (transform.rotateX || transform.rotateY) {
+            // Se tem qualquer transformação, usar DOMElement para ter mais controle
+            if (item.transform) {
                 // Criar elemento HTML <img>
                 const img = document.createElement('img');
                 img.src = item.image;
                 img.style.width = (item.size?.width || 80) + 'px';
                 img.style.height = (item.size?.height || 80) + 'px';
                 img.style.pointerEvents = 'auto';
+                img.style.opacity = transform.opacity ?? 1; // Aplicar opacidade aqui
 
                 // Criar DOMElement
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Aplicar perspectiva
-                element.setPerspective(800);
+                // Aplicar perspectiva se houver rotação 3D
+                if (transform.rotateX || transform.rotateY) {
+                    element.setPerspective(800);
+                }
 
                 // Unificar todas as transformações em uma única string CSS
                 const transformations = [];
@@ -277,6 +280,11 @@ class LocationScene extends Phaser.Scene {
                 if (transform.flipY) transformations.push('scaleY(-1)');
 
                 img.style.transform = transformations.join(' ');
+
+                // Aplicar opacidade via Phaser setAlpha
+                if (transform.opacity !== undefined) {
+                    element.setAlpha(transform.opacity);
+                }
 
                 // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
