@@ -94,14 +94,19 @@ class DatabaseLoader {
                             height: parseFloat(h.height)
                         },
                         transform: {
+                            rotation: parseFloat(h.rotation) || 0,
                             rotateX: parseFloat(h.rotate_x) || 0,
                             rotateY: parseFloat(h.rotate_y) || 0,
-                            rotation: parseFloat(h.rotation) || 0,
                             scaleX: parseFloat(h.scale_x) || 1,
                             scaleY: parseFloat(h.scale_y) || 1,
                             skewX: parseFloat(h.skew_x) || 0,
                             skewY: parseFloat(h.skew_y) || 0,
-                            opacity: parseFloat(h.opacity) ?? 1
+                            flipX: h.flip_x === 1 || h.flip_x === '1' || h.flip_x === true,
+                            flipY: h.flip_y === 1 || h.flip_y === '1' || h.flip_y === true,
+                            opacity: parseFloat(h.opacity) ?? 1,
+                            shadowBlur: parseFloat(h.shadow_blur) || 0,
+                            shadowOffsetX: parseFloat(h.shadow_offset_x) || 0,
+                            shadowOffsetY: parseFloat(h.shadow_offset_y) || 0
                         }
                     });
                 } else {
