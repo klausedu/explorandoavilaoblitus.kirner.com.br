@@ -92,6 +92,14 @@ class DatabaseLoader {
                         size: {
                             width: parseFloat(h.width),
                             height: parseFloat(h.height)
+                        },
+                        transform: {
+                            rotateX: parseFloat(h.rotateX) || 0,
+                            rotateY: parseFloat(h.rotateY) || 0,
+                            rotation: parseFloat(h.rotation) || 0,
+                            scaleX: parseFloat(h.scaleX) || 1,
+                            scaleY: parseFloat(h.scaleY) || 1,
+                            opacity: parseFloat(h.opacity) ?? 1
                         }
                     });
                 } else {

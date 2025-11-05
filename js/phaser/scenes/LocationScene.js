@@ -261,42 +261,22 @@ class LocationScene extends Phaser.Scene {
                 // Aplicar perspectiva
                 element.setPerspective(800);
 
-                // Aplicar rotação 3D
-                // rotate3d.set(x, y, z, angle)
-                const rotX = transform.rotateX || 0;
-                const rotY = transform.rotateY || 0;
+                // Unificar todas as transformações em uma única string CSS
+                const transformations = [];
+                if (transform.rotateX) transformations.push(`rotateX(${transform.rotateX}deg)`);
+                if (transform.rotateY) transformations.push(`rotateY(${transform.rotateY}deg)`);
+                if (transform.rotation) transformations.push(`rotate(${transform.rotation}deg)`);
 
-                if (rotX !== 0 && rotY !== 0) {
-                    // Ambas rotações - não há suporte direto, usar apenas rotX
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotX !== 0) {
-                    // Rotação no eixo X
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotY !== 0) {
-                    // Rotação no eixo Y
-                    element.rotate3d.set(0, 1, 0, rotY);
-                }
-
-                // Aplicar rotação 2D (Z axis) via CSS se necessário
-                if (transform.rotation) {
-                    img.style.transform = `rotate(${transform.rotation}deg)`;
-                }
-
-                // Aplicar escala via CSS
                 const scaleX = transform.scaleX || 1;
                 const scaleY = transform.scaleY || 1;
                 if (scaleX !== 1 || scaleY !== 1) {
-                    const currentTransform = img.style.transform || '';
-                    img.style.transform = currentTransform + ` scale(${scaleX}, ${scaleY})`;
+                    transformations.push(`scale(${scaleX}, ${scaleY})`);
                 }
 
-                // Aplicar flip
-                if (transform.flipX || transform.flipY) {
-                    const flipX = transform.flipX ? -1 : 1;
-                    const flipY = transform.flipY ? -1 : 1;
-                    const currentTransform = img.style.transform || '';
-                    img.style.transform = currentTransform + ` scaleX(${flipX}) scaleY(${flipY})`;
-                }
+                if (transform.flipX) transformations.push('scaleX(-1)');
+                if (transform.flipY) transformations.push('scaleY(-1)');
+
+                img.style.transform = transformations.join(' ');
 
                 // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
