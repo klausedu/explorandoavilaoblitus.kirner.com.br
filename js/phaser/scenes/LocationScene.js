@@ -243,6 +243,7 @@ class LocationScene extends Phaser.Scene {
             const y = bgY + (item.position.y / 100) * bgHeight;
 
             const transform = item.transform || {};
+            console.log('Item transform object:', transform);
             let element;
 
             // Se tem qualquer transformação, usar DOMElement para ter mais controle
@@ -280,6 +281,7 @@ class LocationScene extends Phaser.Scene {
                 if (transform.flipY) transformations.push('scaleY(-1)');
 
                 img.style.transform = transformations.join(' ');
+                console.log('Applied transformations:', transformations);
 
                 // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
