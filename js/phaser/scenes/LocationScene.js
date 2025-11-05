@@ -279,6 +279,10 @@ class LocationScene extends Phaser.Scene {
                 if (transform.flipX) transformations.push('scaleX(-1)');
                 if (transform.flipY) transformations.push('scaleY(-1)');
 
+                // Skew transformations
+                if (transform.skewX) transformations.push(`skewX(${transform.skewX}deg)`);
+                if (transform.skewY) transformations.push(`skewY(${transform.skewY}deg)`);
+
                 img.style.transform = transformations.join(' ');
 
                 // Aplicar opacidade via Phaser setAlpha
