@@ -99,6 +99,8 @@ class DatabaseLoader {
                             rotation: parseFloat(h.rotation) || 0,
                             scaleX: parseFloat(h.scale_x) || 1,
                             scaleY: parseFloat(h.scale_y) || 1,
+                            skewX: parseFloat(h.skew_x) || 0,
+                            skewY: parseFloat(h.skew_y) || 0,
                             opacity: parseFloat(h.opacity) ?? 1
                         }
                     });
