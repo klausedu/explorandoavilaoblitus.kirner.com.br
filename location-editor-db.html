@@ -1516,7 +1516,7 @@
             item.size.width = width;
             item.size.height = height;
 
-            autoSave();
+            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
             renderPositionedItems();
         }
 
@@ -1544,7 +1544,7 @@
             item.transform.skewX = skewX;
             item.transform.skewY = skewY;
 
-            autoSave();
+            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
 
             // Update display values
             document.getElementById('rotation-value').textContent = rotation + '°';
@@ -1576,7 +1576,7 @@
             item.transform.shadowOffsetX = shadowX;
             item.transform.shadowOffsetY = shadowY;
 
-            autoSave();
+            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
 
             // Update display values
             document.getElementById('opacity-value').textContent = Math.round(opacity * 100) + '%';
