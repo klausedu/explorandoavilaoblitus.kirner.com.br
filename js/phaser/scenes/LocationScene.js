@@ -253,7 +253,7 @@ class LocationScene extends Phaser.Scene {
                 img.style.width = (item.size?.width || 80) + 'px';
                 img.style.height = (item.size?.height || 80) + 'px';
                 img.style.pointerEvents = 'auto';
-                img.style.opacity = transform.opacity ?? 1; // Aplicar opacidade aqui
+                img.style.transformStyle = 'preserve-3d'; // Necessário para 3D
 
                 // Criar DOMElement
                 element = this.add.dom(x, y, img);
@@ -285,14 +285,9 @@ class LocationScene extends Phaser.Scene {
 
                 img.style.transform = transformations.join(' ');
 
-                // Aplicar opacidade via Phaser setAlpha
+                // Aplicar opacidade via CSS
                 if (transform.opacity !== undefined) {
-                    element.setAlpha(transform.opacity);
-                }
-
-                // Aplicar opacidade via Phaser setAlpha
-                if (transform.opacity !== undefined) {
-                    element.setAlpha(transform.opacity);
+                    img.style.opacity = transform.opacity;
                 }
 
                 // Salvar transform original para hover
