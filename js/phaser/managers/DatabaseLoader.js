@@ -78,6 +78,7 @@ class DatabaseLoader {
             const items = [];
 
             (location.hotspots || []).forEach(h => {
+                console.log('--- Processing hotspot ---', h);
                 if (h.type === 'item' && h.item_id) {
                     // Este é um item colecionável
                     items.push({

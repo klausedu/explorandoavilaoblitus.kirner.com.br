@@ -233,7 +233,6 @@ class LocationScene extends Phaser.Scene {
         const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
 
         this.locationData.items.forEach(item => {
-            console.log('--- Rendering item ---', item);
             if (gameStateManager.isItemCollected(item.id)) return;
             if (!item.image || !item.position) {
                 console.warn('Item sem dados de imagem ou posição:', item);
@@ -255,7 +254,6 @@ class LocationScene extends Phaser.Scene {
                 img.style.height = (item.size?.height || 80) + 'px';
                 img.style.pointerEvents = 'auto';
                 img.style.opacity = transform.opacity ?? 1; // Aplicar opacidade aqui
-                console.log('Created img element:', img);
 
                 // Criar DOMElement
                 element = this.add.dom(x, y, img);
@@ -282,7 +280,6 @@ class LocationScene extends Phaser.Scene {
                 if (transform.flipY) transformations.push('scaleY(-1)');
 
                 img.style.transform = transformations.join(' ');
-                console.log('Applied transform:', img.style.transform);
 
                 // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
