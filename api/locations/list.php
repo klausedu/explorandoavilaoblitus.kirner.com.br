@@ -78,6 +78,14 @@ try {
                 h.target_location,
                 h.item_id,
                 h.interaction_data,
+                h.rotation,
+                h.rotate_x,
+                h.rotate_y,
+                h.scale_x,
+                h.scale_y,
+                h.skew_x,
+                h.skew_y,
+                h.opacity,
                 i.image as item_image
             FROM hotspots h
             LEFT JOIN items i ON h.item_id = i.id AND h.type = 'item'
