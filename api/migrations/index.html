@@ -111,6 +111,21 @@
         <div id="migration-result" class="result"></div>
     </div>
 
+    <div class="migration-card">
+        <h2>3️⃣ Adicionar Colunas de Flip e Shadow</h2>
+        <p>Adiciona as colunas para suportar flip (espelhamento) e sombras nos items.</p>
+        <p><strong>Colunas que serão adicionadas:</strong></p>
+        <ul style="color: #999; font-size: 13px;">
+            <li>flip_x - Espelhamento horizontal (boolean)</li>
+            <li>flip_y - Espelhamento vertical (boolean)</li>
+            <li>shadow_blur - Desfoque da sombra (pixels)</li>
+            <li>shadow_offset_x - Deslocamento X da sombra (pixels)</li>
+            <li>shadow_offset_y - Deslocamento Y da sombra (pixels)</li>
+        </ul>
+        <button onclick="runFlipShadowMigration()">▶️ Executar Migração</button>
+        <div id="flip-shadow-result" class="result"></div>
+    </div>
+
     <script>
         async function checkColumns() {
             const resultDiv = document.getElementById('check-result');
@@ -133,6 +148,25 @@
 
             try {
                 const response = await fetch('add-all-transform-columns.php');
+                const text = await response.text();
+                resultDiv.innerHTML = text;
+
+                // Auto-check columns after migration
+                setTimeout(() => {
+                    checkColumns();
+                }, 1000);
+            } catch (error) {
+                resultDiv.innerHTML = `<pre class="error">❌ Erro: ${error.message}</pre>`;
+            }
+        }
+
+        async function runFlipShadowMigration() {
+            const resultDiv = document.getElementById('flip-shadow-result');
+            resultDiv.classList.add('show');
+            resultDiv.innerHTML = '<p>⏳ Executando migração...</p>';
+
+            try {
+                const response = await fetch('add-flip-shadow-columns.php');
                 const text = await response.text();
                 resultDiv.innerHTML = text;
 
