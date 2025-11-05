@@ -258,30 +258,47 @@ class LocationScene extends Phaser.Scene {
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Aplicar perspectiva para rotações 3D
+                // Aplicar perspectiva
                 element.setPerspective(800);
 
-                // Construir string de transform CSS (EXATAMENTE como o editor)
+                // Aplicar rotações 3D via Phaser API (não via CSS!)
+                const rotX = transform.rotateX || 0;
+                const rotY = transform.rotateY || 0;
+
+                if (rotX !== 0 && rotY !== 0) {
+                    // Ambas rotações - usar apenas rotX
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotX !== 0) {
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotY !== 0) {
+                    element.rotate3d.set(0, 1, 0, rotY);
+                }
+
+                // Transformações 2D via CSS (NÃO incluir rotateX/rotateY aqui!)
                 const transforms = [];
 
-                // Rotação Z (2D)
-                transforms.push(`rotateZ(${transform.rotation || 0}deg)`);
-
-                // Rotações 3D
-                transforms.push(`rotateX(${transform.rotateX || 0}deg)`);
-                transforms.push(`rotateY(${transform.rotateY || 0}deg)`);
+                // Rotação 2D (Z axis)
+                if (transform.rotation) {
+                    transforms.push(`rotate(${transform.rotation}deg)`);
+                }
 
                 // Escala (com flip integrado)
                 const scaleX = (transform.scaleX || 1) * (transform.flipX ? -1 : 1);
                 const scaleY = (transform.scaleY || 1) * (transform.flipY ? -1 : 1);
-                transforms.push(`scale(${scaleX}, ${scaleY})`);
+                if (scaleX !== 1 || scaleY !== 1) {
+                    transforms.push(`scale(${scaleX}, ${scaleY})`);
+                }
 
                 // Skew (distorção)
-                transforms.push(`skewX(${transform.skewX || 0}deg)`);
-                transforms.push(`skewY(${transform.skewY || 0}deg)`);
+                if (transform.skewX || transform.skewY) {
+                    if (transform.skewX) transforms.push(`skewX(${transform.skewX}deg)`);
+                    if (transform.skewY) transforms.push(`skewY(${transform.skewY}deg)`);
+                }
 
-                // Aplicar todas as transformações de uma vez
-                img.style.transform = transforms.join(' ');
+                // Aplicar transformações CSS (apenas 2D!)
+                if (transforms.length > 0) {
+                    img.style.transform = transforms.join(' ');
+                }
 
                 // Aplicar opacidade via CSS
                 img.style.opacity = transform.opacity ?? 1;
