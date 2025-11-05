@@ -299,15 +299,23 @@ class LocationScene extends Phaser.Scene {
                 const transformString = transforms.join(' ');
                 img.style.transform = transformString;
 
+                // Aplicar scale TAMBÉM via Phaser (além do CSS)
+                if (baseScaleX !== 1 || baseScaleY !== 1) {
+                    element.setScale(finalScaleX, finalScaleY);
+                }
+
                 // DEBUG
                 console.log('🎨 Item:', item.id);
                 console.log('  Transform object:', transform);
                 console.log('  Scale values:', {baseScaleX, baseScaleY, flipX, flipY, finalScaleX, finalScaleY});
                 console.log('  CSS 2D transforms:', transformString);
                 console.log('  Applied to img:', img.style.transform);
+                console.log('  Phaser scale:', element.scaleX, element.scaleY);
 
-                // Aplicar opacidade via CSS
-                img.style.opacity = transform.opacity ?? 1;
+                // Aplicar opacidade via Phaser setAlpha (ROLLBACK)
+                if (transform.opacity !== undefined) {
+                    element.setAlpha(transform.opacity);
+                }
 
                 // Aplicar sombra via CSS filter (drop-shadow)
                 const shadowBlur = transform.shadowBlur || 0;
