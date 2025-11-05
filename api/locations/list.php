@@ -67,20 +67,22 @@ try {
     foreach ($locations as &$location) {
         $hotspotStmt = $pdo->prepare("
             SELECT
-                id,
-                type,
-                x,
-                y,
-                width,
-                height,
-                label,
-                description,
-                target_location,
-                item_id,
-                interaction_data
-            FROM hotspots
-            WHERE location_id = ?
-            ORDER BY type, id
+                h.id,
+                h.type,
+                h.x,
+                h.y,
+                h.width,
+                h.height,
+                h.label,
+                h.description,
+                h.target_location,
+                h.item_id,
+                h.interaction_data,
+                i.image as item_image
+            FROM hotspots h
+            LEFT JOIN items i ON h.item_id = i.id AND h.type = 'item'
+            WHERE h.location_id = ?
+            ORDER BY h.type, h.id
         ");
         $hotspotStmt->execute([$location['id']]);
         $location['hotspots'] = $hotspotStmt->fetchAll(PDO::FETCH_ASSOC);

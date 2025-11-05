@@ -73,13 +73,40 @@ class DatabaseLoader {
         const gameMap = {};
 
         for (const location of this.locations) {
+            // Separar hotspots entre navegação e items
+            const hotspots = [];
+            const items = [];
+
+            (location.hotspots || []).forEach(h => {
+                if (h.type === 'item' && h.item_id) {
+                    // Este é um item colecionável
+                    items.push({
+                        id: h.item_id,
+                        name: h.label || h.item_id,
+                        description: h.description || '',
+                        image: h.item_image || '',  // ✅ Imagem do JOIN
+                        position: {
+                            x: parseFloat(h.x),
+                            y: parseFloat(h.y)
+                        },
+                        size: {
+                            width: parseFloat(h.width),
+                            height: parseFloat(h.height)
+                        }
+                    });
+                } else {
+                    // Este é um hotspot de navegação/interação
+                    hotspots.push(h);
+                }
+            });
+
             gameMap[location.id] = {
                 id: location.id,
                 name: location.name,
                 description: location.description,
                 image: location.background_image,
-                hotspots: this.convertHotspots(location.hotspots),
-                items: location.items || []
+                hotspots: this.convertHotspots(hotspots),  // Só hotspots de navegação
+                items: items  // Items separados
             };
         }
 

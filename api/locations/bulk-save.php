@@ -81,7 +81,9 @@ try {
         }
 
         // Insert/Update location
+        error_log("📍 Salvando location: ID=$locationId, Name=$name, Description=$description, BG=$backgroundImage");
         $locationStmt->execute([$locationId, $name, $description, $backgroundImage]);
+        error_log("✅ Location $locationId salvo com sucesso!");
         $successCount++;
 
         // Delete old hotspots
@@ -102,11 +104,14 @@ try {
 
                 // Se é hotspot de item, garantir que o item existe na tabela items
                 if ($type === 'item' && $itemId) {
+                    $itemImage = $hotspot['item_image'] ?? '';  // Pegar imagem do hotspot
+                    error_log("📦 Salvando item: ID=$itemId, Nome=$label, Image=$itemImage");
+
                     $itemStmt->execute([
                         $itemId,
                         $label ?: $itemId,
                         $description ?: '',
-                        '', // image vazio por enquanto
+                        $itemImage,  // ✅ Usar imagem do item
                         'collectible' // type padrão
                     ]);
                     $itemCount++;

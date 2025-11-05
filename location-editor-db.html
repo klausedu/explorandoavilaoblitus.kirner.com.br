@@ -1232,7 +1232,7 @@
             if (!location.items) return;
 
             location.items.forEach((item, index) => {
-                if (!item.image) return;
+                // SEMPRE renderizar, mesmo sem imagem (usar placeholder)
 
                 // Set default position
                 if (!item.position) {
@@ -1280,6 +1280,11 @@
                 itemEl.dataset.itemIndex = index;
 
                 // CSS inline direto
+                // Se não tem imagem, usar placeholder
+                const backgroundStyle = item.image
+                    ? `background-image: url(${item.image}); background-size: contain; background-repeat: no-repeat;`
+                    : `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px dashed white;`;
+
                 itemEl.style.cssText = `
                     position: absolute;
                     left: ${item.position.x}%;
@@ -1290,9 +1295,7 @@
                     cursor: move;
                     pointer-events: auto;
                     z-index: 100;
-                    background-image: url(${item.image});
-                    background-size: contain;
-                    background-repeat: no-repeat;
+                    ${backgroundStyle}
                     background-position: center;
                     border-radius: 4px;
                     opacity: ${item.transform.opacity || 1};
@@ -3095,6 +3098,7 @@ if (typeof module !== 'undefined' && module.exports) {
                                 id: h.item_id,
                                 name: h.label || h.item_id,
                                 description: h.description || '',
+                                image: h.item_image || '',  // ✅ Incluir imagem do JOIN
                                 position: {
                                     x: parseFloat(h.x) || 50,
                                     y: parseFloat(h.y) || 50
@@ -3226,7 +3230,8 @@ if (typeof module !== 'undefined' && module.exports) {
                         label: item.name || item.id,
                         description: item.description || '',
                         target_location: null,
-                        item_id: item.id
+                        item_id: item.id,
+                        item_image: item.image || ''  // ✅ Incluir imagem do item
                     }));
 
                     // Combinar hotspots de navegação + items
