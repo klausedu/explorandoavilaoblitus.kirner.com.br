@@ -278,31 +278,36 @@ class LocationScene extends Phaser.Scene {
                 }
 
                 // Transformações 2D via CSS (rotation, scale, skew)
-                const transformations = [];
+                // Aplicar uma por uma, concatenando (como na versão que funcionava)
 
                 // Rotação 2D (Z axis)
                 if (transform.rotation) {
-                    transformations.push(`rotate(${transform.rotation}deg)`);
+                    img.style.transform = `rotate(${transform.rotation}deg)`;
                 }
 
                 // Escala
                 const scaleX = transform.scaleX || 1;
                 const scaleY = transform.scaleY || 1;
                 if (scaleX !== 1 || scaleY !== 1) {
-                    transformations.push(`scale(${scaleX}, ${scaleY})`);
+                    const currentTransform = img.style.transform || '';
+                    img.style.transform = currentTransform + ` scale(${scaleX}, ${scaleY})`;
                 }
 
                 // Flip
-                if (transform.flipX) transformations.push('scaleX(-1)');
-                if (transform.flipY) transformations.push('scaleY(-1)');
+                if (transform.flipX || transform.flipY) {
+                    const flipX = transform.flipX ? -1 : 1;
+                    const flipY = transform.flipY ? -1 : 1;
+                    const currentTransform = img.style.transform || '';
+                    img.style.transform = currentTransform + ` scaleX(${flipX}) scaleY(${flipY})`;
+                }
 
                 // Skew
-                if (transform.skewX) transformations.push(`skewX(${transform.skewX}deg)`);
-                if (transform.skewY) transformations.push(`skewY(${transform.skewY}deg)`);
-
-                // Aplicar CSS transforms (apenas 2D)
-                if (transformations.length > 0) {
-                    img.style.transform = transformations.join(' ');
+                if (transform.skewX || transform.skewY) {
+                    const currentTransform = img.style.transform || '';
+                    const skewTransforms = [];
+                    if (transform.skewX) skewTransforms.push(`skewX(${transform.skewX}deg)`);
+                    if (transform.skewY) skewTransforms.push(`skewY(${transform.skewY}deg)`);
+                    img.style.transform = currentTransform + ` ${skewTransforms.join(' ')}`;
                 }
 
                 // Aplicar opacidade via Phaser setAlpha
