@@ -26,9 +26,13 @@ if (!$input || !isset($input['locations'])) {
 }
 
 $locations = $input['locations'];
+$order = $input['order'] ?? [];
 $totalLocations = count($locations);
 
 error_log("📥 BULK SAVE - Recebendo $totalLocations localizações");
+if (!empty($order)) {
+    error_log("🔢 Ordem recebida: " . implode(', ', $order));
+}
 
 try {
     // Start transaction - tudo ou nada!
@@ -40,12 +44,13 @@ try {
 
     // Prepared statements (reutilizáveis)
     $locationStmt = $pdo->prepare("
-        INSERT INTO locations (id, name, description, background_image)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO locations (id, name, description, background_image, display_order)
+        VALUES (?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             description = VALUES(description),
             background_image = VALUES(background_image),
+            display_order = VALUES(display_order),
             updated_at = CURRENT_TIMESTAMP
     ");
 
@@ -74,6 +79,13 @@ try {
         $name = $loc['name'] ?? '';
         $description = $loc['description'] ?? '';
         $backgroundImage = $loc['background_image'] ?? '';
+        
+        // Get display order from the order array
+        $displayOrder = array_search($locationId, $order);
+        if ($displayOrder === false) {
+            $displayOrder = 999; // Default order if not found
+        }
+
 
         if (empty($locationId) || empty($name)) {
             error_log("⚠️ BULK SAVE - Localização sem id ou name: " . json_encode($loc));
@@ -81,8 +93,8 @@ try {
         }
 
         // Insert/Update location
-        error_log("📍 Salvando location: ID=$locationId, Name=$name, Description=$description, BG=$backgroundImage");
-        $locationStmt->execute([$locationId, $name, $description, $backgroundImage]);
+        error_log("📍 Salvando location: ID=$locationId, Name=$name, Description=$description, BG=$backgroundImage, Order=$displayOrder");
+        $locationStmt->execute([$locationId, $name, $description, $backgroundImage, $displayOrder]);
         error_log("✅ Location $locationId salvo com sucesso!");
         $successCount++;
 

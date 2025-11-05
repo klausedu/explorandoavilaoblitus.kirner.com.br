@@ -57,7 +57,7 @@ try {
             created_at,
             updated_at
         FROM locations
-        ORDER BY name ASC
+        ORDER BY display_order ASC, name ASC
     ");
 
     $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);

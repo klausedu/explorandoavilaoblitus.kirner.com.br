@@ -976,7 +976,7 @@
 
                 // Re-render and save
                 renderLocationsList();
-                autoSave();
+                syncToDatabase(true); // silent sync
             }
 
             return false;
@@ -3189,7 +3189,7 @@ if (typeof module !== 'undefined' && module.exports) {
             }
         }
 
-        async function syncToDatabase() {
+        async function syncToDatabase(silent = false) {
             console.log('🔔 FUNÇÃO syncToDatabase() CHAMADA!');
             console.log('📊 gameLocations:', gameLocations);
             console.log('📊 Total de localizações:', Object.keys(gameLocations).length);
@@ -3201,18 +3201,24 @@ if (typeof module !== 'undefined' && module.exports) {
             }
 
             if (Object.keys(gameLocations).length === 0) {
-                alert('❌ Nenhuma localização para salvar! gameLocations está vazio.');
+                if (!silent) {
+                    alert('❌ Nenhuma localização para salvar! gameLocations está vazio.');
+                }
                 console.error('❌ gameLocations está vazio!');
                 return;
             }
 
-            if (!confirm(`Sincronizar ${Object.keys(gameLocations).length} localizações com o banco MySQL?`)) {
-                console.log('⚠️ Usuário cancelou a sincronização');
-                return;
+            if (!silent) {
+                if (!confirm(`Sincronizar ${Object.keys(gameLocations).length} localizações com o banco MySQL?`)) {
+                    console.log('⚠️ Usuário cancelou a sincronização');
+                    return;
+                }
             }
 
             console.log('💾 Iniciando sincronização em LOTE (bulk save)...');
-            showToast('☁️ Sincronizando TODAS as localizações de uma vez...', 'info');
+            if (!silent) {
+                showToast('☁️ Sincronizando TODAS as localizações de uma vez...', 'info');
+            }
 
             const startTime = Date.now();
 
@@ -3280,13 +3286,15 @@ if (typeof module !== 'undefined' && module.exports) {
                 const response = await fetch('api/locations/bulk-save.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ locations: allLocations })
+                    body: JSON.stringify({ locations: allLocations, order: locationOrder })
                 });
 
                 if (!response.ok) {
                     const text = await response.text();
                     console.error(`❌ HTTP ${response.status}:`, text);
-                    showToast('❌ Erro ao salvar: ' + text.substring(0, 100), 'error');
+                    if (!silent) {
+                        showToast('❌ Erro ao salvar: ' + text.substring(0, 100), 'error');
+                    }
                     return;
                 }
 
@@ -3297,15 +3305,21 @@ if (typeof module !== 'undefined' && module.exports) {
 
                 if (result.success) {
                     console.log(`✅ Sucesso! ${result.data.locations} localizações, ${result.data.hotspots} hotspots em ${elapsed}s`);
-                    showToast(`✅ ${result.data.locations} localizações e ${result.data.hotspots} hotspots salvos em ${elapsed}s!`, 'success');
+                    if (!silent) {
+                        showToast(`✅ ${result.data.locations} localizações e ${result.data.hotspots} hotspots salvos em ${elapsed}s!`, 'success');
+                    }
                 } else {
                     console.error(`❌ Erro:`, result.message);
-                    showToast(`❌ Erro: ${result.message}`, 'error');
+                    if (!silent) {
+                        showToast(`❌ Erro: ${result.message}`, 'error');
+                    }
                 }
 
             } catch (error) {
                 console.error('❌ Erro ao sincronizar:', error);
-                showToast('❌ Erro ao sincronizar: ' + error.message, 'error');
+                if (!silent) {
+                    showToast('❌ Erro ao sincronizar: ' + error.message, 'error');
+                }
             }
         }
 
