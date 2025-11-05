@@ -84,11 +84,24 @@ class LocationScene extends Phaser.Scene {
     getBackgroundBounds() {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
-        const bgScale = this.background.scale;
-        const bgWidth = this.background.width * bgScale;
-        const bgHeight = this.background.height * bgScale;
-        const bgX = width / 2 - bgWidth / 2;
-        const bgY = height / 2 - bgHeight / 2;
+
+        // Handle "fake" background object when image is missing
+        if (!this.background || !this.background.texture) {
+            return {
+                width: width,
+                height: height,
+                bgWidth: width,
+                bgHeight: height,
+                bgX: 0,
+                bgY: 0
+            };
+        }
+
+        const bg = this.background;
+        const bgWidth = bg.displayWidth;
+        const bgHeight = bg.displayHeight;
+        const bgX = bg.x - (bgWidth / 2);
+        const bgY = bg.y - (bgHeight / 2);
 
         return { width, height, bgWidth, bgHeight, bgX, bgY };
     }
@@ -135,7 +148,16 @@ class LocationScene extends Phaser.Scene {
                 height: height,
                 scale: 1,
                 x: width / 2,
-                y: height / 2
+                y: height / 2,
+                texture: null, // Add texture property to avoid errors
+                setOrigin: () => { }, // Add a dummy setOrigin method
+                setPosition: (x, y) => {
+                    this.background.x = x;
+                    this.background.y = y;
+                },
+                setScale: (scale) => {
+                    this.background.scale = scale;
+                }
             };
         }
     }
