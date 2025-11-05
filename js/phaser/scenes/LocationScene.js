@@ -259,34 +259,51 @@ class LocationScene extends Phaser.Scene {
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Aplicar perspectiva se houver rotação 3D
-                if (transform.rotateX || transform.rotateY) {
-                    element.setPerspective(800);
-                    // Adicionar transform-style preserve-3d no container
-                    element.node.style.transformStyle = 'preserve-3d';
-                    img.style.transformStyle = 'preserve-3d';
+                // Aplicar perspectiva
+                element.setPerspective(800);
+
+                // Aplicar rotação 3D via Phaser API (não CSS!)
+                const rotX = transform.rotateX || 0;
+                const rotY = transform.rotateY || 0;
+
+                if (rotX !== 0 && rotY !== 0) {
+                    // Ambas rotações - usar apenas rotX (limitação do Phaser)
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotX !== 0) {
+                    // Rotação no eixo X
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotY !== 0) {
+                    // Rotação no eixo Y
+                    element.rotate3d.set(0, 1, 0, rotY);
                 }
 
-                // Unificar todas as transformações em uma única string CSS
+                // Transformações 2D via CSS (rotation, scale, skew)
                 const transformations = [];
-                if (transform.rotateX) transformations.push(`rotateX(${transform.rotateX}deg)`);
-                if (transform.rotateY) transformations.push(`rotateY(${transform.rotateY}deg)`);
-                if (transform.rotation) transformations.push(`rotate(${transform.rotation}deg)`);
 
+                // Rotação 2D (Z axis)
+                if (transform.rotation) {
+                    transformations.push(`rotate(${transform.rotation}deg)`);
+                }
+
+                // Escala
                 const scaleX = transform.scaleX || 1;
                 const scaleY = transform.scaleY || 1;
                 if (scaleX !== 1 || scaleY !== 1) {
                     transformations.push(`scale(${scaleX}, ${scaleY})`);
                 }
 
+                // Flip
                 if (transform.flipX) transformations.push('scaleX(-1)');
                 if (transform.flipY) transformations.push('scaleY(-1)');
 
-                // Skew transformations
+                // Skew
                 if (transform.skewX) transformations.push(`skewX(${transform.skewX}deg)`);
                 if (transform.skewY) transformations.push(`skewY(${transform.skewY}deg)`);
 
-                img.style.transform = transformations.join(' ');
+                // Aplicar CSS transforms (apenas 2D)
+                if (transformations.length > 0) {
+                    img.style.transform = transformations.join(' ');
+                }
 
                 // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
