@@ -85,7 +85,12 @@ try {
                 h.scale_y,
                 h.skew_x,
                 h.skew_y,
+                h.flip_x,
+                h.flip_y,
                 h.opacity,
+                h.shadow_blur,
+                h.shadow_offset_x,
+                h.shadow_offset_y,
                 i.image as item_image
             FROM hotspots h
             LEFT JOIN items i ON h.item_id = i.id AND h.type = 'item'

@@ -128,14 +128,19 @@ try {
                     $description,
                     $targetLocation,
                     $itemId,
+                    $hotspot['rotation'] ?? 0,
                     $hotspot['rotate_x'] ?? 0,
                     $hotspot['rotate_y'] ?? 0,
-                    $hotspot['rotation'] ?? 0,
                     $hotspot['scale_x'] ?? 1,
                     $hotspot['scale_y'] ?? 1,
                     $hotspot['skew_x'] ?? 0,
                     $hotspot['skew_y'] ?? 0,
-                    $hotspot['opacity'] ?? 1
+                    $hotspot['flip_x'] ?? 0,
+                    $hotspot['flip_y'] ?? 0,
+                    $hotspot['opacity'] ?? 1,
+                    $hotspot['shadow_blur'] ?? 0,
+                    $hotspot['shadow_offset_x'] ?? 0,
+                    $hotspot['shadow_offset_y'] ?? 0
                 ]);
                 $hotspotCount++;
             }
