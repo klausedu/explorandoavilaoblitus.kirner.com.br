@@ -253,7 +253,7 @@ class LocationScene extends Phaser.Scene {
                 img.style.width = (item.size?.width || 80) + 'px';
                 img.style.height = (item.size?.height || 80) + 'px';
                 img.style.pointerEvents = 'auto';
-                img.style.transformStyle = 'preserve-3d'; // Necessário para 3D
+                img.style.opacity = transform.opacity ?? 1; // Aplicar opacidade aqui
 
                 // Criar DOMElement
                 element = this.add.dom(x, y, img);
@@ -262,6 +262,9 @@ class LocationScene extends Phaser.Scene {
                 // Aplicar perspectiva se houver rotação 3D
                 if (transform.rotateX || transform.rotateY) {
                     element.setPerspective(800);
+                    // Adicionar transform-style preserve-3d no container
+                    element.node.style.transformStyle = 'preserve-3d';
+                    img.style.transformStyle = 'preserve-3d';
                 }
 
                 // Unificar todas as transformações em uma única string CSS
@@ -285,9 +288,9 @@ class LocationScene extends Phaser.Scene {
 
                 img.style.transform = transformations.join(' ');
 
-                // Aplicar opacidade via CSS
+                // Aplicar opacidade via Phaser setAlpha
                 if (transform.opacity !== undefined) {
-                    img.style.opacity = transform.opacity;
+                    element.setAlpha(transform.opacity);
                 }
 
                 // Salvar transform original para hover
