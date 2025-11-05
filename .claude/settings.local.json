@@ -22,7 +22,8 @@
       "Bash(start test-ui.html)",
       "Bash(git checkout:*)",
       "Bash(cp:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
