@@ -274,8 +274,7 @@ class LocationScene extends Phaser.Scene {
                 // Escala (com flip integrado)
                 const scaleX = (transform.scaleX || 1) * (transform.flipX ? -1 : 1);
                 const scaleY = (transform.scaleY || 1) * (transform.flipY ? -1 : 1);
-                transforms.push(`scaleX(${scaleX})`);
-                transforms.push(`scaleY(${scaleY})`);
+                transforms.push(`scale(${scaleX}, ${scaleY})`);
 
                 // Skew (distorção)
                 transforms.push(`skewX(${transform.skewX || 0}deg)`);
