@@ -258,19 +258,23 @@ class LocationScene extends Phaser.Scene {
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Configurar CSS para suportar 3D
-                element.node.style.perspective = '800px';
-                element.node.style.transformStyle = 'preserve-3d';
-                img.style.transformStyle = 'preserve-3d';
+                // Aplicar perspectiva via Phaser
+                element.setPerspective(800);
 
-                // Construir TODAS as transformações via CSS (3D + 2D)
-                const transforms = [];
-
-                // Rotações 3D
+                // Aplicar rotações 3D via Phaser API
                 const rotX = transform.rotateX || 0;
                 const rotY = transform.rotateY || 0;
-                if (rotX !== 0) transforms.push(`rotateX(${rotX}deg)`);
-                if (rotY !== 0) transforms.push(`rotateY(${rotY}deg)`);
+
+                if (rotX !== 0 && rotY !== 0) {
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotX !== 0) {
+                    element.rotate3d.set(1, 0, 0, rotX);
+                } else if (rotY !== 0) {
+                    element.rotate3d.set(0, 1, 0, rotY);
+                }
+
+                // Construir transformações 2D via CSS
+                const transforms = [];
 
                 // Rotação 2D (Z axis)
                 const rotation = transform.rotation || 0;
@@ -291,15 +295,16 @@ class LocationScene extends Phaser.Scene {
                 if (skewX !== 0) transforms.push(`skewX(${skewX}deg)`);
                 if (skewY !== 0) transforms.push(`skewY(${skewY}deg)`);
 
-                // Aplicar TODAS as transformações via CSS
+                // CHAVE: Aplicar no CONTAINER (element.node), não no img!
                 const transformString = transforms.join(' ');
-                img.style.transform = transformString;
+                const currentNodeTransform = element.node.style.transform || '';
+                element.node.style.transform = currentNodeTransform + ' ' + transformString;
 
                 // DEBUG
                 console.log('🎨 Item:', item.id);
                 console.log('  Transform object:', transform);
-                console.log('  CSS transform:', transformString);
-                console.log('  Applied to img:', img.style.transform);
+                console.log('  CSS 2D transforms:', transformString);
+                console.log('  Applied to node:', element.node.style.transform);
 
                 // Aplicar opacidade via CSS
                 img.style.opacity = transform.opacity ?? 1;
