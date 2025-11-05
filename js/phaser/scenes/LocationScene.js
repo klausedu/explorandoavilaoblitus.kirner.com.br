@@ -258,30 +258,23 @@ class LocationScene extends Phaser.Scene {
                 element = this.add.dom(x, y, img);
                 element.setOrigin(0.5);
 
-                // Aplicar perspectiva
-                element.setPerspective(800);
+                // Configurar CSS para suportar 3D
+                element.node.style.perspective = '800px';
+                element.node.style.transformStyle = 'preserve-3d';
+                img.style.transformStyle = 'preserve-3d';
 
-                // Aplicar rotações 3D via Phaser API (não via CSS!)
+                // Construir TODAS as transformações via CSS (3D + 2D)
+                const transforms = [];
+
+                // Rotações 3D
                 const rotX = transform.rotateX || 0;
                 const rotY = transform.rotateY || 0;
-
-                if (rotX !== 0 && rotY !== 0) {
-                    // Ambas rotações - usar apenas rotX
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotX !== 0) {
-                    element.rotate3d.set(1, 0, 0, rotX);
-                } else if (rotY !== 0) {
-                    element.rotate3d.set(0, 1, 0, rotY);
-                }
-
-                // Transformações 2D via CSS (NÃO incluir rotateX/rotateY aqui!)
-                const transforms = [];
+                if (rotX !== 0) transforms.push(`rotateX(${rotX}deg)`);
+                if (rotY !== 0) transforms.push(`rotateY(${rotY}deg)`);
 
                 // Rotação 2D (Z axis)
                 const rotation = transform.rotation || 0;
-                if (rotation !== 0) {
-                    transforms.push(`rotate(${rotation}deg)`);
-                }
+                if (rotation !== 0) transforms.push(`rotate(${rotation}deg)`);
 
                 // Escala (com flip integrado)
                 const baseScaleX = transform.scaleX || 1;
@@ -298,7 +291,7 @@ class LocationScene extends Phaser.Scene {
                 if (skewX !== 0) transforms.push(`skewX(${skewX}deg)`);
                 if (skewY !== 0) transforms.push(`skewY(${skewY}deg)`);
 
-                // Aplicar transformações CSS (sempre aplicar!)
+                // Aplicar TODAS as transformações via CSS
                 const transformString = transforms.join(' ');
                 img.style.transform = transformString;
 
