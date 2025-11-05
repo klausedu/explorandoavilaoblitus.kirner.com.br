@@ -53,8 +53,8 @@ try {
 
     $hotspotStmt = $pdo->prepare("
         INSERT INTO hotspots
-        (location_id, type, x, y, width, height, label, description, target_location, item_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (location_id, type, x, y, width, height, label, description, target_location, item_id, rotate_x, rotate_y, rotation, scale_x, scale_y, opacity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $itemStmt = $pdo->prepare("
@@ -127,7 +127,13 @@ try {
                     $label,
                     $description,
                     $targetLocation,
-                    $itemId
+                    $itemId,
+                    $hotspot['rotate_x'] ?? 0,
+                    $hotspot['rotate_y'] ?? 0,
+                    $hotspot['rotation'] ?? 0,
+                    $hotspot['scale_x'] ?? 1,
+                    $hotspot['scale_y'] ?? 1,
+                    $hotspot['opacity'] ?? 1
                 ]);
                 $hotspotCount++;
             }

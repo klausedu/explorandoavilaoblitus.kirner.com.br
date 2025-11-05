@@ -3221,18 +3221,34 @@ if (typeof module !== 'undefined' && module.exports) {
                     }));
 
                     // IMPORTANTE: Converter items para hotspots do tipo 'item'
-                    const itemHotspots = (loc.items || []).map(item => ({
-                        type: 'item',
-                        x: item.position?.x || 50,
-                        y: item.position?.y || 50,
-                        width: item.size?.width || 5,
-                        height: item.size?.height || 5,
-                        label: item.name || item.id,
-                        description: item.description || '',
-                        target_location: null,
-                        item_id: item.id,
-                        item_image: item.image || ''  // ✅ Incluir imagem do item
-                    }));
+                // Preparar dados para o servidor
+                const payload = {
+                    locations: Object.values(gameLocations).map(location => {
+                        const newLocation = { ...location };
+                        if (newLocation.items) {
+                            const itemHotspots = newLocation.items.map(item => ({
+                                type: 'item',
+                                item_id: item.id,
+                                label: item.name,
+                                description: item.description,
+                                item_image: item.image,
+                                x: item.position.x,
+                                y: item.position.y,
+                                width: item.size.width,
+                                height: item.size.height,
+                                rotate_x: item.transform.rotateX,
+                                rotate_y: item.transform.rotateY,
+                                rotation: item.transform.rotation,
+                                scale_x: item.transform.scaleX,
+                                scale_y: item.transform.scaleY,
+                                opacity: item.transform.opacity
+                            }));
+                            newLocation.hotspots = (newLocation.hotspots || []).concat(itemHotspots);
+                        }
+                        return newLocation;
+                    }),
+                    connections: [] // Connections are part of location hotspots now
+                };
 
                     // Combinar hotspots de navegação + items
                     const allHotspots = [...hotspots, ...itemHotspots];
