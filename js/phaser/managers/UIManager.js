@@ -5,6 +5,12 @@
 class UIManager {
     constructor() {
         this.createUI();
+        this.activeScene = null;
+        this.draggedInventoryItem = null;
+        this.dragPreview = null;
+        this.boundHandleInventoryDragMove = this.handleInventoryDragMove.bind(this);
+        this.boundEndInventoryDrag = this.endInventoryDrag.bind(this);
+        this.inventoryWasOpenOnDrag = false;
     }
 
     createUI() {
@@ -170,6 +176,27 @@ class UIManager {
                 font-size: 12px;
                 font-weight: 600;
             }
+            .inventory-drag-preview {
+                position: fixed;
+                pointer-events: none;
+                z-index: 2000;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.75);
+                border: 2px solid #f0a500;
+                border-radius: 8px;
+                padding: 10px;
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.45);
+            }
+            .inventory-drag-preview img {
+                max-width: 64px;
+                max-height: 64px;
+                display: block;
+            }
+            .inventory-drag-preview span {
+                display: block;
+                color: #f0a500;
+                font-size: 22px;
+            }
         `;
         document.head.appendChild(style);
 
@@ -260,6 +287,10 @@ class UIManager {
         document.getElementById('location-description').textContent = location.description;
     }
 
+    setActiveScene(scene) {
+        this.activeScene = scene;
+    }
+
     /**
      * Toggle inventário
      */
@@ -292,12 +323,119 @@ class UIManager {
         grid.style.display = 'grid';
         empty.style.display = 'none';
 
-        grid.innerHTML = items.map(item => `
-            <div class="inventory-item">
-                ${item.image ? `<img src="${item.image}" alt="${item.name}">` : '📦'}
-                <div class="inventory-item-name">${item.name}</div>
-            </div>
-        `).join('');
+        grid.innerHTML = '';
+
+        items.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inventory-item';
+            itemDiv.dataset.itemId = item.id;
+
+            if (item.image) {
+                const img = document.createElement('img');
+                img.src = item.image;
+                img.alt = item.name;
+                itemDiv.appendChild(img);
+            } else {
+                const placeholder = document.createElement('span');
+                placeholder.textContent = '📦';
+                placeholder.style.fontSize = '32px';
+                itemDiv.appendChild(placeholder);
+            }
+
+            const label = document.createElement('div');
+            label.className = 'inventory-item-name';
+            label.textContent = item.name;
+            itemDiv.appendChild(label);
+
+            itemDiv.addEventListener('pointerdown', (event) => this.startInventoryDrag(item, event));
+
+            grid.appendChild(itemDiv);
+        });
+    }
+
+    startInventoryDrag(item, event) {
+        if (event.button !== undefined && event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.draggedInventoryItem = {
+            item,
+            pointerId: event.pointerId
+        };
+
+        if (this.dragPreview) {
+            this.dragPreview.remove();
+        }
+
+        this.dragPreview = document.createElement('div');
+        this.dragPreview.className = 'inventory-drag-preview';
+
+        if (item.image) {
+            const img = document.createElement('img');
+            img.src = item.image;
+            img.alt = item.name;
+            this.dragPreview.appendChild(img);
+        } else {
+            const span = document.createElement('span');
+            span.textContent = item.name?.charAt(0) || '🎒';
+            this.dragPreview.appendChild(span);
+        }
+
+        document.body.appendChild(this.dragPreview);
+        this.updateDragPreviewPosition(event.clientX, event.clientY);
+
+        const overlay = document.getElementById('inventory-overlay');
+        this.inventoryWasOpenOnDrag = overlay && overlay.classList.contains('active');
+        if (this.inventoryWasOpenOnDrag) {
+            overlay.classList.remove('active');
+        }
+
+        document.addEventListener('pointermove', this.boundHandleInventoryDragMove);
+        document.addEventListener('pointerup', this.boundEndInventoryDrag);
+    }
+
+    handleInventoryDragMove(event) {
+        if (!this.draggedInventoryItem || event.pointerId !== this.draggedInventoryItem.pointerId) return;
+        event.preventDefault();
+        this.updateDragPreviewPosition(event.clientX, event.clientY);
+    }
+
+    endInventoryDrag(event) {
+        if (!this.draggedInventoryItem || event.pointerId !== this.draggedInventoryItem.pointerId) return;
+        event.preventDefault();
+
+        const { item } = this.draggedInventoryItem;
+
+        if (this.dragPreview) {
+            this.dragPreview.remove();
+            this.dragPreview = null;
+        }
+
+        document.removeEventListener('pointermove', this.boundHandleInventoryDragMove);
+        document.removeEventListener('pointerup', this.boundEndInventoryDrag);
+
+        this.draggedInventoryItem = null;
+
+        this.inventoryWasOpenOnDrag = false;
+
+        if (!window.game || !game.canvas) return;
+        const rect = game.canvas.getBoundingClientRect();
+        const inside = event.clientX >= rect.left && event.clientX <= rect.right &&
+            event.clientY >= rect.top && event.clientY <= rect.bottom;
+
+        if (inside && this.activeScene && typeof this.activeScene.handleInventoryDrop === 'function') {
+            const pointerPosition = {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+            this.activeScene.handleInventoryDrop(item.id, pointerPosition);
+        }
+    }
+
+    updateDragPreviewPosition(x, y) {
+        if (!this.dragPreview) return;
+        this.dragPreview.style.left = `${x}px`;
+        this.dragPreview.style.top = `${y}px`;
     }
 
     /**

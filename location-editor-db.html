@@ -728,6 +728,12 @@
                             <input type="text" id="puzzle-reward-name" placeholder="ex: Chave da Fonte">
                         </div>
 
+                        <div class="form-group">
+                            <label>Imagem da Recompensa (opcional)</label>
+                            <input type="text" id="puzzle-reward-image" placeholder="images/items/tesouro.png">
+                            <div class="form-hint">Use caminho relativo, ex: images/items/tesouro.png</div>
+                        </div>
+
                         <button class="btn btn-success" onclick="savePuzzle()">💾 Salvar Enigma</button>
                     </div>
                 </div>
@@ -797,9 +803,114 @@
 
         // Visual positioning variables
         let selectedItemIndex = null;
+        let selectedVisualType = null; // 'item' | 'puzzle' | null
         let draggedItem = null;
         let dragOffsetX = 0;
         let dragOffsetY = 0;
+
+        const DEFAULT_VISUAL_TRANSFORM = {
+            rotation: 0,
+            rotateX: 0,
+            rotateY: 0,
+            scaleX: 1,
+            scaleY: 1,
+            skewX: 0,
+            skewY: 0,
+            flipX: false,
+            flipY: false,
+            opacity: 1,
+            shadowBlur: 0,
+            shadowOffsetX: 0,
+            shadowOffsetY: 0
+        };
+
+        function cloneDefaultTransform() {
+            return {
+                rotation: DEFAULT_VISUAL_TRANSFORM.rotation,
+                rotateX: DEFAULT_VISUAL_TRANSFORM.rotateX,
+                rotateY: DEFAULT_VISUAL_TRANSFORM.rotateY,
+                scaleX: DEFAULT_VISUAL_TRANSFORM.scaleX,
+                scaleY: DEFAULT_VISUAL_TRANSFORM.scaleY,
+                skewX: DEFAULT_VISUAL_TRANSFORM.skewX,
+                skewY: DEFAULT_VISUAL_TRANSFORM.skewY,
+                flipX: DEFAULT_VISUAL_TRANSFORM.flipX,
+                flipY: DEFAULT_VISUAL_TRANSFORM.flipY,
+                opacity: DEFAULT_VISUAL_TRANSFORM.opacity,
+                shadowBlur: DEFAULT_VISUAL_TRANSFORM.shadowBlur,
+                shadowOffsetX: DEFAULT_VISUAL_TRANSFORM.shadowOffsetX,
+                shadowOffsetY: DEFAULT_VISUAL_TRANSFORM.shadowOffsetY
+            };
+        }
+
+        function ensureItemDefaults(item) {
+            if (!item) return;
+            if (!item.position) item.position = { x: 50, y: 50 };
+            if (!item.size) item.size = { width: 80, height: 80 };
+            if (!item.transform) item.transform = cloneDefaultTransform();
+        }
+
+        function ensurePuzzleDefaults(puzzle) {
+            if (!puzzle) return;
+            if (!puzzle.visual) {
+                puzzle.visual = {
+                    beforeImage: '',
+                    afterImage: '',
+                    position: { x: 50, y: 50 },
+                    size: { width: 120, height: 120 },
+                    transform: cloneDefaultTransform()
+                };
+            } else {
+                if (typeof puzzle.visual.beforeImage === 'undefined') {
+                    puzzle.visual.beforeImage = '';
+                }
+                if (typeof puzzle.visual.afterImage === 'undefined') {
+                    puzzle.visual.afterImage = '';
+                }
+                if (!puzzle.visual.position) {
+                    puzzle.visual.position = { x: 50, y: 50 };
+                }
+                if (!puzzle.visual.size) {
+                    puzzle.visual.size = { width: 120, height: 120 };
+                }
+                if (!puzzle.visual.transform) {
+                    puzzle.visual.transform = cloneDefaultTransform();
+                }
+            }
+        }
+
+        function getSelectedVisual() {
+            if (!currentLocationId) return null;
+            const location = gameLocations[currentLocationId];
+            if (!location) return null;
+
+            if (selectedVisualType === 'item' && selectedItemIndex !== null && location.items) {
+                const item = location.items[selectedItemIndex];
+                if (!item) return null;
+                ensureItemDefaults(item);
+                return { type: 'item', data: item };
+            }
+
+            if (selectedVisualType === 'puzzle' && location.puzzle) {
+                ensurePuzzleDefaults(location.puzzle);
+                return { type: 'puzzle', data: location.puzzle.visual, puzzle: location.puzzle };
+            }
+
+            return null;
+        }
+
+        function highlightSelectedVisual() {
+            const container = document.getElementById('visual-items-container');
+            if (!container) return;
+            Array.from(container.children).forEach(el => {
+                const visualType = el.dataset.visualType || 'item';
+                const indexAttr = el.dataset.itemIndex;
+                const index = typeof indexAttr !== 'undefined' ? parseInt(indexAttr) : null;
+                const isSelected =
+                    (visualType === 'item' && selectedVisualType === 'item' && index === selectedItemIndex) ||
+                    (visualType === 'puzzle' && selectedVisualType === 'puzzle');
+                el.style.boxShadow = isSelected ? '0 0 0 3px #667eea' : 'none';
+            });
+        }
 
         // Toast notification function
         function showToast(message, type = 'success') {
@@ -1019,6 +1130,10 @@
                 loadPuzzleData(location.puzzle);
             }
 
+            // Reset visual selections ao trocar de local
+            selectedVisualType = null;
+            selectedItemIndex = null;
+
             // Items
             renderItemsList();
 
@@ -1129,46 +1244,101 @@
             const location = gameLocations[currentLocationId];
             const list = document.getElementById('visual-items-list');
 
-            if (!location.items || location.items.length === 0) {
-                list.innerHTML = '<p style="color: #999; font-size: 14px;">Nenhum item. Adicione itens na aba "Itens".</p>';
-                return;
+            list.innerHTML = '';
+
+            const hasItems = Array.isArray(location.items) && location.items.length > 0;
+            if (!hasItems) {
+                const emptyInfo = document.createElement('p');
+                emptyInfo.style.cssText = 'color: #999; font-size: 14px; margin-bottom: 15px;';
+                emptyInfo.textContent = 'Nenhum item. Adicione itens na aba "Itens".';
+                list.appendChild(emptyInfo);
+            } else {
+                location.items.forEach((item, index) => {
+                    ensureItemDefaults(item);
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.cssText = 'background: white; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 2px solid #e0e0e0;';
+
+                    itemDiv.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 8px;">${item.name}</div>
+                        <input type="file"
+                               id="item-image-${index}"
+                               accept="image/png"
+                               style="display: none;"
+                               onchange="handleItemImageUpload(${index}, event)">
+                        <button class="btn btn-secondary btn-small"
+                                style="width: 100%; margin-bottom: 5px;"
+                                onclick="document.getElementById('item-image-${index}').click()">
+                            ${item.image ? '✓ Alterar PNG' : '📁 Upload PNG'}
+                        </button>
+                        ${item.image ? `
+                            <div style="text-align: center; margin-top: 8px;">
+                                <img src="${item.image}" style="max-width: 100%; max-height: 80px; image-rendering: crisp-edges;">
+                                <div style="font-size: 11px; color: #999; margin-top: 5px;">
+                                    ${item.position ? `Posição: ${item.position.x.toFixed(1)}%, ${item.position.y.toFixed(1)}%` : 'Arraste para posicionar'}
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+
+                    list.appendChild(itemDiv);
+                });
             }
 
-            list.innerHTML = '';
-            location.items.forEach((item, index) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'background: white; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 2px solid #e0e0e0;';
+            if (location.puzzle) {
+                ensurePuzzleDefaults(location.puzzle);
+                const puzzleVisual = location.puzzle.visual;
 
-                itemDiv.innerHTML = `
-                    <div style="font-weight: 600; margin-bottom: 8px;">${item.name}</div>
-                    <input type="file"
-                           id="item-image-${index}"
-                           accept="image/png"
-                           style="display: none;"
-                           onchange="handleItemImageUpload(${index}, event)">
-                    <button class="btn btn-secondary btn-small"
-                            style="width: 100%; margin-bottom: 5px;"
-                            onclick="document.getElementById('item-image-${index}').click()">
-                        ${item.image ? '✓ Alterar PNG' : '📁 Upload PNG'}
-                    </button>
-                    ${item.image ? `
-                        <div style="text-align: center; margin-top: 8px;">
-                            <img src="${item.image}" style="max-width: 100%; max-height: 80px; image-rendering: crisp-edges;">
-                            <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                                ${item.position ? `Posição: ${item.position.x}%, ${item.position.y}%` : 'Arraste para posicionar'}
-                            </div>
+                const puzzleDiv = document.createElement('div');
+                puzzleDiv.style.cssText = 'background: #fff6e5; padding: 12px; border-radius: 8px; border: 2px solid #f0a500;';
+
+                puzzleDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong style="font-size: 15px;">🧩 Visual do Enigma</strong>
+                        <span style="font-size: 12px; color: #b36b00;">Baú fechado / aberto</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="background: white; border: 1px solid #f0a500; border-radius: 6px; padding: 8px; text-align: center;">
+                            <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">Antes (fechado)</div>
+                            <input type="file" id="puzzle-image-before" accept="image/png" style="display: none;" onchange="handlePuzzleImageUpload('before', event)">
+                            <button class="btn btn-secondary btn-small" style="width: 100%; margin-bottom: 6px;"
+                                    onclick="document.getElementById('puzzle-image-before').click()">
+                                ${puzzleVisual.beforeImage ? '✓ Alterar PNG' : '📁 Upload PNG'}
+                            </button>
+                            ${puzzleVisual.beforeImage ? `<img src="${puzzleVisual.beforeImage}" style="max-width: 100%; max-height: 90px; image-rendering: crisp-edges;">` : '<div style="font-size: 12px; color: #999;">Sem imagem</div>'}
                         </div>
-                    ` : ''}
+
+                        <div style="background: white; border: 1px solid #f0a500; border-radius: 6px; padding: 8px; text-align: center;">
+                            <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">Depois (aberto)</div>
+                            <input type="file" id="puzzle-image-after" accept="image/png" style="display: none;" onchange="handlePuzzleImageUpload('after', event)">
+                            <button class="btn btn-secondary btn-small" style="width: 100%; margin-bottom: 6px;"
+                                    onclick="document.getElementById('puzzle-image-after').click()">
+                                ${puzzleVisual.afterImage ? '✓ Alterar PNG' : '📁 Upload PNG'}
+                            </button>
+                            ${puzzleVisual.afterImage ? `<img src="${puzzleVisual.afterImage}" style="max-width: 100%; max-height: 90px; image-rendering: crisp-edges;">` : '<div style="font-size: 12px; color: #999;">Sem imagem</div>'}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px; font-size: 11px; color: #805400; line-height: 1.4;">
+                        ➕ Após enviar as imagens, selecione o enigma no cenário e ajuste posição/tamanho na pré-visualização.
+                    </div>
+                    <button class="btn btn-primary btn-small" style="width: 100%; margin-top: 10px;"
+                            onclick="selectPuzzleVisual(); renderPositionedItems();">
+                        🎯 Selecionar Enigma no Cenário
+                    </button>
                 `;
 
-                list.appendChild(itemDiv);
-            });
+                list.appendChild(puzzleDiv);
+            }
         }
 
         // Handle item image upload
         function handleItemImageUpload(itemIndex, event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            event.target.value = '';
 
             const location = gameLocations[currentLocationId];
             const imagePath = `images/items/${file.name}`;
@@ -1192,6 +1362,35 @@
             autoSave();
 
             showToast('✓ Imagem de item carregada!');
+        }
+
+        function handlePuzzleImageUpload(state, event) {
+            if (!currentLocationId) return;
+
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+
+            const location = gameLocations[currentLocationId];
+            if (!location.puzzle) {
+                showToast('Configure o enigma antes de adicionar imagens', 'warning');
+                return;
+            }
+
+            ensurePuzzleDefaults(location.puzzle);
+
+            const imagePath = `images/puzzles/${file.name}`;
+            if (state === 'after') {
+                location.puzzle.visual.afterImage = imagePath;
+            } else {
+                location.puzzle.visual.beforeImage = imagePath;
+            }
+
+            renderVisualItemsList();
+            renderPositionedItems();
+            autoSave();
+
+            showToast('✓ Imagem do enigma atualizada!');
         }
 
         // Ajustar escala do container no editor
@@ -1229,33 +1428,85 @@
 
             container.innerHTML = '';
 
-            if (!location.items) return;
+            if (!Array.isArray(location.items)) {
+                location.items = [];
+            }
+
+            if (location.puzzle) {
+                ensurePuzzleDefaults(location.puzzle);
+                const puzzleVisual = location.puzzle.visual;
+                const isPuzzleSelected = selectedVisualType === 'puzzle';
+
+                const transforms = [
+                    'translate(-50%, -50%)',
+                    `rotateZ(${puzzleVisual.transform.rotation || 0}deg)`,
+                    `rotateX(${puzzleVisual.transform.rotateX || 0}deg)`,
+                    `rotateY(${puzzleVisual.transform.rotateY || 0}deg)`,
+                    `scaleX(${(puzzleVisual.transform.scaleX || 1) * (puzzleVisual.transform.flipX ? -1 : 1)})`,
+                    `scaleY(${(puzzleVisual.transform.scaleY || 1) * (puzzleVisual.transform.flipY ? -1 : 1)})`,
+                    `skewX(${puzzleVisual.transform.skewX || 0}deg)`,
+                    `skewY(${puzzleVisual.transform.skewY || 0}deg)`
+                ];
+
+                const shadowBlur = puzzleVisual.transform.shadowBlur || 0;
+                const shadowX = puzzleVisual.transform.shadowOffsetX || 0;
+                const shadowY = puzzleVisual.transform.shadowOffsetY || 0;
+                const filterString = shadowBlur > 0
+                    ? `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.5))`
+                    : 'none';
+
+                const backgroundStyle = puzzleVisual.beforeImage
+                    ? `background-image: url(${puzzleVisual.beforeImage}); background-size: contain; background-repeat: no-repeat;`
+                    : `background: repeating-linear-gradient(45deg, rgba(240,165,0,0.3), rgba(240,165,0,0.3) 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px); border: 3px dashed #f0a500;`;
+
+                const puzzleEl = document.createElement('div');
+                puzzleEl.dataset.visualType = 'puzzle';
+                puzzleEl.style.cssText = `
+                    position: absolute;
+                    left: ${puzzleVisual.position.x}%;
+                    top: ${puzzleVisual.position.y}%;
+                    width: ${puzzleVisual.size.width}px;
+                    height: ${puzzleVisual.size.height}px;
+                    transform: ${transforms.join(' ')};
+                    cursor: move;
+                    pointer-events: auto;
+                    z-index: 120;
+                    ${backgroundStyle}
+                    background-position: center;
+                    border-radius: 6px;
+                    opacity: ${puzzleVisual.transform.opacity || 1};
+                    filter: ${filterString};
+                    ${isPuzzleSelected ? 'box-shadow: 0 0 0 3px #f0a500;' : ''}
+                `;
+
+                const label = document.createElement('div');
+                label.textContent = location.puzzle.id || 'Enigma';
+                label.style.cssText = `
+                    position: absolute;
+                    bottom: -25px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(240, 165, 0, 0.9);
+                    color: #2a1600;
+                    padding: 4px 8px;
+                    font-size: 11px;
+                    border-radius: 4px;
+                    white-space: nowrap;
+                    pointer-events: none;
+                    font-weight: 600;
+                `;
+                puzzleEl.appendChild(label);
+
+                puzzleEl.addEventListener('mousedown', startDragItem);
+
+                container.appendChild(puzzleEl);
+            }
 
             location.items.forEach((item, index) => {
-                // SEMPRE renderizar, mesmo sem imagem (usar placeholder)
+                ensureItemDefaults(item);
 
-                // Set default position
-                if (!item.position) {
-                    item.position = { x: 50, y: 50 };
-                }
+                const isSelected = selectedVisualType === 'item' && selectedItemIndex === index;
 
-                // Set default size
-                if (!item.size) {
-                    item.size = { width: 80, height: 80 };
-                }
-
-                const isSelected = selectedItemIndex === index;
-
-                // Initialize transform if needed
-                if (!item.transform) {
-                    item.transform = {
-                        rotation: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false,
-                        rotateX: 0, rotateY: 0, skewX: 0, skewY: 0,
-                        opacity: 1, shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0
-                    };
-                }
-
-                // Build transform string with 3D transforms
                 const transforms = [
                     'translate(-50%, -50%)',
                     `rotateZ(${item.transform.rotation || 0}deg)`,
@@ -1267,7 +1518,6 @@
                     `skewY(${item.transform.skewY || 0}deg)`
                 ];
 
-                // Build filter string for shadow
                 const shadowBlur = item.transform.shadowBlur || 0;
                 const shadowX = item.transform.shadowOffsetX || 0;
                 const shadowY = item.transform.shadowOffsetY || 0;
@@ -1275,16 +1525,13 @@
                     ? `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.5))`
                     : 'none';
 
-                // Criar elemento
-                const itemEl = document.createElement('div');
-                itemEl.dataset.itemIndex = index;
-
-                // CSS inline direto
-                // Se não tem imagem, usar placeholder
                 const backgroundStyle = item.image
                     ? `background-image: url(${item.image}); background-size: contain; background-repeat: no-repeat;`
                     : `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px dashed white;`;
 
+                const itemEl = document.createElement('div');
+                itemEl.dataset.visualType = 'item';
+                itemEl.dataset.itemIndex = index;
                 itemEl.style.cssText = `
                     position: absolute;
                     left: ${item.position.x}%;
@@ -1303,7 +1550,6 @@
                     ${isSelected ? 'box-shadow: 0 0 0 3px #667eea;' : ''}
                 `;
 
-                // Label simples
                 const label = document.createElement('div');
                 label.textContent = item.name;
                 label.style.cssText = `
@@ -1321,44 +1567,58 @@
                 `;
 
                 itemEl.appendChild(label);
-
-                // Drag event
                 itemEl.addEventListener('mousedown', startDragItem);
-
                 container.appendChild(itemEl);
             });
+
+            highlightSelectedVisual();
         }
 
         // Render transform controls panel
         function renderTransformControls() {
             const panel = document.getElementById('transform-controls');
 
-            if (selectedItemIndex === null || !currentLocationId) {
-                panel.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; font-size: 14px;">Selecione um item para editar</div>';
+            if (!currentLocationId) {
+                panel.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; font-size: 14px;">Selecione um local para editar</div>';
                 return;
             }
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
-
-            if (!item || !item.image) {
-                panel.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; font-size: 14px;">Item não possui imagem</div>';
+            const visual = getSelectedVisual();
+            if (!visual) {
+                panel.innerHTML = '<div style="color: #999; text-align: center; padding: 20px; font-size: 14px;">Selecione um item ou enigma para editar</div>';
                 return;
             }
 
-            // Initialize transform if not set
-            if (!item.transform) {
-                item.transform = {
-                    rotation: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false,
-                    rotateX: 0, rotateY: 0, skewX: 0, skewY: 0,
-                    opacity: 1, shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0
-                };
-            }
+            const data = visual.data;
+            const transform = data.transform || cloneDefaultTransform();
+            data.transform = transform;
+            const size = data.size || { width: 80, height: 80 };
+            data.size = size;
+
+            const title = visual.type === 'item'
+                ? (data.name || 'Item sem nome')
+                : `Enigma ${visual.puzzle?.id || ''}`;
+
+            const previewImage = visual.type === 'item' ? (data.image || '') : (data.beforeImage || '');
+            const afterImage = visual.type === 'puzzle' ? data.afterImage : null;
+
+            const previewHtml = previewImage
+                ? `<img src="${previewImage}" style="max-width: 100%; max-height: 100px; image-rendering: crisp-edges;">`
+                : '<div style="color: #999; font-size: 12px;">Sem imagem atribuída</div>';
+
+            const afterHtml = afterImage
+                ? `<div style="margin-top: 10px;">
+                        <label style="font-size: 11px; color: #805400;">Após resolver</label>
+                        <img src="${afterImage}" style="max-width: 100%; max-height: 80px; image-rendering: crisp-edges; opacity: 0.85;">
+                   </div>`
+                : '';
 
             panel.innerHTML = `
                 <div style="margin-bottom: 15px;">
-                    <strong style="display: block; margin-bottom: 8px;">${item.name}</strong>
-                    <img src="${item.image}" style="max-width: 100%; max-height: 100px; image-rendering: crisp-edges;">
+                    <strong style="display: block; margin-bottom: 8px;">${title}</strong>
+                    ${previewHtml}
+                    ${afterHtml}
+                    ${visual.type === 'puzzle' ? '<div style="margin-top:6px; font-size: 11px; color: #805400;">Este visual representa o estado antes de resolver o enigma.</div>' : ''}
                 </div>
 
                 <div style="margin-bottom: 15px;">
@@ -1366,13 +1626,13 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div>
                             <label style="font-size: 11px; color: #666;">Largura (px)</label>
-                            <input type="number" id="item-width" value="${item.size?.width || 80}"
+                            <input type="number" id="item-width" value="${size.width || 80}"
                                    style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;"
                                    onchange="updateItemSize()">
                         </div>
                         <div>
                             <label style="font-size: 11px; color: #666;">Altura (px)</label>
-                            <input type="number" id="item-height" value="${item.size?.height || 80}"
+                            <input type="number" id="item-height" value="${size.height || 80}"
                                    style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;"
                                    onchange="updateItemSize()">
                         </div>
@@ -1381,11 +1641,11 @@
 
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600;">Rotação Z (plano)</label>
-                    <input type="range" id="item-rotation" min="-180" max="180" value="${item.transform.rotation}"
+                    <input type="range" id="item-rotation" min="-180" max="180" value="${transform.rotation || 0}"
                            style="width: 100%;"
                            oninput="updateItemTransform()">
                     <div style="text-align: center; font-size: 12px; color: #666; margin-top: 4px;">
-                        <span id="rotation-value">${item.transform.rotation}°</span>
+                        <span id="rotation-value">${transform.rotation || 0}°</span>
                     </div>
                 </div>
 
@@ -1394,34 +1654,34 @@
 
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 11px; color: #666;">Inclinar X (horizontal)</label>
-                        <input type="range" id="item-rotate-x" min="-90" max="90" value="${item.transform.rotateX || 0}"
+                        <input type="range" id="item-rotate-x" min="-90" max="90" value="${transform.rotateX || 0}"
                                style="width: 100%;"
                                oninput="updateItemTransform()">
-                        <div style="text-align: center; font-size: 11px;" id="rotate-x-value">${item.transform.rotateX || 0}°</div>
+                        <div style="text-align: center; font-size: 11px;" id="rotate-x-value">${transform.rotateX || 0}°</div>
                     </div>
 
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 11px; color: #666;">Inclinar Y (vertical)</label>
-                        <input type="range" id="item-rotate-y" min="-90" max="90" value="${item.transform.rotateY || 0}"
+                        <input type="range" id="item-rotate-y" min="-90" max="90" value="${transform.rotateY || 0}"
                                style="width: 100%;"
                                oninput="updateItemTransform()">
-                        <div style="text-align: center; font-size: 11px;" id="rotate-y-value">${item.transform.rotateY || 0}°</div>
+                        <div style="text-align: center; font-size: 11px;" id="rotate-y-value">${transform.rotateY || 0}°</div>
                     </div>
 
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 11px; color: #666;">Distorcer X (horizontal)</label>
-                        <input type="range" id="item-skew-x" min="-45" max="45" value="${item.transform.skewX || 0}"
+                        <input type="range" id="item-skew-x" min="-45" max="45" value="${transform.skewX || 0}"
                                style="width: 100%;"
                                oninput="updateItemTransform()">
-                        <div style="text-align: center; font-size: 11px;" id="skew-x-value">${item.transform.skewX || 0}°</div>
+                        <div style="text-align: center; font-size: 11px;" id="skew-x-value">${transform.skewX || 0}°</div>
                     </div>
 
                     <div>
                         <label style="font-size: 11px; color: #666;">Distorcer Y (vertical)</label>
-                        <input type="range" id="item-skew-y" min="-45" max="45" value="${item.transform.skewY || 0}"
+                        <input type="range" id="item-skew-y" min="-45" max="45" value="${transform.skewY || 0}"
                                style="width: 100%;"
                                oninput="updateItemTransform()">
-                        <div style="text-align: center; font-size: 11px;" id="skew-y-value">${item.transform.skewY || 0}°</div>
+                        <div style="text-align: center; font-size: 11px;" id="skew-y-value">${transform.skewY || 0}°</div>
                     </div>
                 </div>
 
@@ -1430,17 +1690,17 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div>
                             <label style="font-size: 11px; color: #666;">Escala X</label>
-                            <input type="range" id="item-scale-x" min="0.1" max="3" step="0.1" value="${item.transform.scaleX}"
+                            <input type="range" id="item-scale-x" min="0.1" max="3" step="0.1" value="${transform.scaleX || 1}"
                                    style="width: 100%;"
                                    oninput="updateItemTransform()">
-                            <div style="text-align: center; font-size: 11px;" id="scale-x-value">${item.transform.scaleX}x</div>
+                            <div style="text-align: center; font-size: 11px;" id="scale-x-value">${transform.scaleX || 1}x</div>
                         </div>
                         <div>
                             <label style="font-size: 11px; color: #666;">Escala Y</label>
-                            <input type="range" id="item-scale-y" min="0.1" max="3" step="0.1" value="${item.transform.scaleY}"
+                            <input type="range" id="item-scale-y" min="0.1" max="3" step="0.1" value="${transform.scaleY || 1}"
                                    style="width: 100%;"
                                    oninput="updateItemTransform()">
-                            <div style="text-align: center; font-size: 11px;" id="scale-y-value">${item.transform.scaleY}x</div>
+                            <div style="text-align: center; font-size: 11px;" id="scale-y-value">${transform.scaleY || 1}x</div>
                         </div>
                     </div>
                 </div>
@@ -1449,10 +1709,10 @@
                     <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600;">Espelhar</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <button onclick="toggleFlipX()" class="btn btn-secondary btn-small" style="width: 100%;">
-                            ${item.transform.flipX ? '↔️ Desfazer X' : '↔️ Flip X'}
+                            ${transform.flipX ? '↔️ Desfazer X' : '↔️ Flip X'}
                         </button>
                         <button onclick="toggleFlipY()" class="btn btn-secondary btn-small" style="width: 100%;">
-                            ${item.transform.flipY ? '↕️ Desfazer Y' : '↕️ Flip Y'}
+                            ${transform.flipY ? '↕️ Desfazer Y' : '↕️ Flip Y'}
                         </button>
                     </div>
                 </div>
@@ -1462,34 +1722,34 @@
 
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 11px; color: #666;">Opacidade</label>
-                        <input type="range" id="item-opacity" min="0" max="1" step="0.1" value="${item.transform.opacity || 1}"
+                        <input type="range" id="item-opacity" min="0" max="1" step="0.1" value="${typeof transform.opacity === 'number' ? transform.opacity : 1}"
                                style="width: 100%;"
                                oninput="updateItemEffects()">
-                        <div style="text-align: center; font-size: 11px;" id="opacity-value">${Math.round((item.transform.opacity || 1) * 100)}%</div>
+                        <div style="text-align: center; font-size: 11px;" id="opacity-value">${Math.round((typeof transform.opacity === 'number' ? transform.opacity : 1) * 100)}%</div>
                     </div>
 
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 11px; color: #666;">Desfoque da Sombra</label>
-                        <input type="range" id="item-shadow-blur" min="0" max="30" step="1" value="${item.transform.shadowBlur || 0}"
+                        <input type="range" id="item-shadow-blur" min="0" max="30" step="1" value="${transform.shadowBlur || 0}"
                                style="width: 100%;"
                                oninput="updateItemEffects()">
-                        <div style="text-align: center; font-size: 11px;" id="shadow-blur-value">${item.transform.shadowBlur || 0}px</div>
+                        <div style="text-align: center; font-size: 11px;" id="shadow-blur-value">${transform.shadowBlur || 0}px</div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div>
                             <label style="font-size: 11px; color: #666;">Sombra X</label>
-                            <input type="range" id="item-shadow-x" min="-20" max="20" step="1" value="${item.transform.shadowOffsetX || 0}"
+                            <input type="range" id="item-shadow-x" min="-20" max="20" step="1" value="${transform.shadowOffsetX || 0}"
                                    style="width: 100%;"
                                    oninput="updateItemEffects()">
-                            <div style="text-align: center; font-size: 11px;" id="shadow-x-value">${item.transform.shadowOffsetX || 0}px</div>
+                            <div style="text-align: center; font-size: 11px;" id="shadow-x-value">${transform.shadowOffsetX || 0}px</div>
                         </div>
                         <div>
                             <label style="font-size: 11px; color: #666;">Sombra Y</label>
-                            <input type="range" id="item-shadow-y" min="-20" max="20" step="1" value="${item.transform.shadowOffsetY || 0}"
+                            <input type="range" id="item-shadow-y" min="-20" max="20" step="1" value="${transform.shadowOffsetY || 0}"
                                    style="width: 100%;"
                                    oninput="updateItemEffects()">
-                            <div style="text-align: center; font-size: 11px;" id="shadow-y-value">${item.transform.shadowOffsetY || 0}px</div>
+                            <div style="text-align: center; font-size: 11px;" id="shadow-y-value">${transform.shadowOffsetY || 0}px</div>
                         </div>
                     </div>
                 </div>
@@ -1502,30 +1762,27 @@
             `;
         }
 
-        // Update item size
         function updateItemSize() {
-            if (selectedItemIndex === null || !currentLocationId) return;
-
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
             const width = parseInt(document.getElementById('item-width').value);
             const height = parseInt(document.getElementById('item-height').value);
 
-            if (!item.size) item.size = {};
-            item.size.width = width;
-            item.size.height = height;
+            if (!Number.isNaN(width)) visual.data.size.width = width;
+            if (!Number.isNaN(height)) visual.data.size.height = height;
 
-            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
             renderPositionedItems();
         }
 
-        // Update item transform
         function updateItemTransform() {
-            if (selectedItemIndex === null || !currentLocationId) return;
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
+            const transform = visual.data.transform || cloneDefaultTransform();
+            visual.data.transform = transform;
 
             const rotation = parseFloat(document.getElementById('item-rotation').value);
             const scaleX = parseFloat(document.getElementById('item-scale-x').value);
@@ -1535,116 +1792,104 @@
             const skewX = parseFloat(document.getElementById('item-skew-x').value);
             const skewY = parseFloat(document.getElementById('item-skew-y').value);
 
-            if (!item.transform) item.transform = {};
-            item.transform.rotation = rotation;
-            item.transform.scaleX = scaleX;
-            item.transform.scaleY = scaleY;
-            item.transform.rotateX = rotateX;
-            item.transform.rotateY = rotateY;
-            item.transform.skewX = skewX;
-            item.transform.skewY = skewY;
+            if (!Number.isNaN(rotation)) transform.rotation = rotation;
+            if (!Number.isNaN(scaleX)) transform.scaleX = scaleX;
+            if (!Number.isNaN(scaleY)) transform.scaleY = scaleY;
+            if (!Number.isNaN(rotateX)) transform.rotateX = rotateX;
+            if (!Number.isNaN(rotateY)) transform.rotateY = rotateY;
+            if (!Number.isNaN(skewX)) transform.skewX = skewX;
+            if (!Number.isNaN(skewY)) transform.skewY = skewY;
 
-            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
-
-            // Update display values
-            document.getElementById('rotation-value').textContent = rotation + '°';
-            document.getElementById('scale-x-value').textContent = scaleX + 'x';
-            document.getElementById('scale-y-value').textContent = scaleY + 'x';
-            document.getElementById('rotate-x-value').textContent = rotateX + '°';
-            document.getElementById('rotate-y-value').textContent = rotateY + '°';
-            document.getElementById('skew-x-value').textContent = skewX + '°';
-            document.getElementById('skew-y-value').textContent = skewY + '°';
+            document.getElementById('rotation-value').textContent = (transform.rotation || 0) + '°';
+            document.getElementById('scale-x-value').textContent = (transform.scaleX || 1) + 'x';
+            document.getElementById('scale-y-value').textContent = (transform.scaleY || 1) + 'x';
+            document.getElementById('rotate-x-value').textContent = (transform.rotateX || 0) + '°';
+            document.getElementById('rotate-y-value').textContent = (transform.rotateY || 0) + '°';
+            document.getElementById('skew-x-value').textContent = (transform.skewX || 0) + '°';
+            document.getElementById('skew-y-value').textContent = (transform.skewY || 0) + '°';
 
             renderPositionedItems();
         }
 
-        // Update item effects (opacity and shadow)
         function updateItemEffects() {
-            if (selectedItemIndex === null || !currentLocationId) return;
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
+            const transform = visual.data.transform || cloneDefaultTransform();
+            visual.data.transform = transform;
 
             const opacity = parseFloat(document.getElementById('item-opacity').value);
             const shadowBlur = parseInt(document.getElementById('item-shadow-blur').value);
             const shadowX = parseInt(document.getElementById('item-shadow-x').value);
             const shadowY = parseInt(document.getElementById('item-shadow-y').value);
 
-            if (!item.transform) item.transform = {};
-            item.transform.opacity = opacity;
-            item.transform.shadowBlur = shadowBlur;
-            item.transform.shadowOffsetX = shadowX;
-            item.transform.shadowOffsetY = shadowY;
+            if (!Number.isNaN(opacity)) transform.opacity = opacity;
+            if (!Number.isNaN(shadowBlur)) transform.shadowBlur = shadowBlur;
+            if (!Number.isNaN(shadowX)) transform.shadowOffsetX = shadowX;
+            if (!Number.isNaN(shadowY)) transform.shadowOffsetY = shadowY;
 
-            // autoSave(); // Removido - salva apenas ao clicar no botão Salvar
-
-            // Update display values
-            document.getElementById('opacity-value').textContent = Math.round(opacity * 100) + '%';
-            document.getElementById('shadow-blur-value').textContent = shadowBlur + 'px';
-            document.getElementById('shadow-x-value').textContent = shadowX + 'px';
-            document.getElementById('shadow-y-value').textContent = shadowY + 'px';
+            document.getElementById('opacity-value').textContent = Math.round((transform.opacity || 1) * 100) + '%';
+            document.getElementById('shadow-blur-value').textContent = (transform.shadowBlur || 0) + 'px';
+            document.getElementById('shadow-x-value').textContent = (transform.shadowOffsetX || 0) + 'px';
+            document.getElementById('shadow-y-value').textContent = (transform.shadowOffsetY || 0) + 'px';
 
             renderPositionedItems();
         }
 
-        // Toggle flip X
         function toggleFlipX() {
-            if (selectedItemIndex === null || !currentLocationId) return;
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
-
-            if (!item.transform) item.transform = {};
-            item.transform.flipX = !item.transform.flipX;
+            const transform = visual.data.transform || cloneDefaultTransform();
+            transform.flipX = !transform.flipX;
+            visual.data.transform = transform;
 
             autoSave();
             renderTransformControls();
             renderPositionedItems();
         }
 
-        // Toggle flip Y
         function toggleFlipY() {
-            if (selectedItemIndex === null || !currentLocationId) return;
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
-
-            if (!item.transform) item.transform = {};
-            item.transform.flipY = !item.transform.flipY;
+            const transform = visual.data.transform || cloneDefaultTransform();
+            transform.flipY = !transform.flipY;
+            visual.data.transform = transform;
 
             autoSave();
             renderTransformControls();
             renderPositionedItems();
         }
 
-        // Reset transforms
         function resetTransforms() {
-            if (selectedItemIndex === null || !currentLocationId) return;
+            if (!currentLocationId) return;
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
-            const location = gameLocations[currentLocationId];
-            const item = location.items[selectedItemIndex];
-
-            item.transform = {
-                rotation: 0,
-                scaleX: 1,
-                scaleY: 1,
-                flipX: false,
-                flipY: false
-            };
+            visual.data.transform = cloneDefaultTransform();
 
             autoSave();
             renderTransformControls();
             renderPositionedItems();
         }
 
-        // Start resizing item
         function startResizeItem(e) {
             resizingItem = e.target.parentElement;
             resizeDirection = e.target.dataset.direction;
 
-            const itemIndex = parseInt(resizingItem.dataset.itemIndex);
-            const location = gameLocations[currentLocationId];
-            const item = location.items[itemIndex];
+            const visualType = resizingItem?.dataset.visualType || 'item';
+            if (visualType === 'item') {
+                const index = parseInt(resizingItem.dataset.itemIndex);
+                if (!Number.isNaN(index)) {
+                    selectItem(index);
+                }
+            } else if (visualType === 'puzzle') {
+                selectPuzzleVisual();
+            }
 
             document.addEventListener('mousemove', resizeItem);
             document.addEventListener('mouseup', stopResizeItem);
@@ -1653,22 +1898,17 @@
             e.preventDefault();
         }
 
-        // Resize item
         function resizeItem(e) {
-            if (!resizingItem) return;
+            if (!resizingItem || !currentLocationId) return;
 
-            const itemIndex = parseInt(resizingItem.dataset.itemIndex);
-            const location = gameLocations[currentLocationId];
-            const item = location.items[itemIndex];
+            const visual = getSelectedVisual();
+            if (!visual) return;
 
             const container = document.getElementById('visual-items-container');
             const rect = container.getBoundingClientRect();
-            const img = resizingItem.querySelector('img');
-            const imgRect = img.getBoundingClientRect();
 
-            // Calculate new size based on mouse movement
-            const centerX = parseFloat(resizingItem.style.left) * rect.width / 100;
-            const centerY = parseFloat(resizingItem.style.top) * rect.height / 100;
+            const centerX = (parseFloat(resizingItem.style.left) / 100) * rect.width;
+            const centerY = (parseFloat(resizingItem.style.top) / 100) * rect.height;
 
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
@@ -1676,21 +1916,16 @@
             const newWidth = Math.abs(mouseX - centerX) * 2;
             const newHeight = Math.abs(mouseY - centerY) * 2;
 
-            // Update size (minimum 20px)
-            if (!item.size) item.size = {};
-            item.size.width = Math.max(20, Math.round(newWidth));
-            item.size.height = Math.max(20, Math.round(newHeight));
+            visual.data.size.width = Math.max(20, Math.round(newWidth));
+            visual.data.size.height = Math.max(20, Math.round(newHeight));
 
-            // Update immediately without re-rendering everything
-            img.style.width = item.size.width + 'px';
-            img.style.height = item.size.height + 'px';
+            resizingItem.style.width = visual.data.size.width + 'px';
+            resizingItem.style.height = visual.data.size.height + 'px';
         }
 
-        // Stop resizing
         function stopResizeItem() {
             if (resizingItem) {
-                const itemIndex = parseInt(resizingItem.dataset.itemIndex);
-                renderTransformControls(); // Update the controls to show new size
+                renderTransformControls();
                 autoSave();
             }
 
@@ -1700,26 +1935,28 @@
             document.removeEventListener('mouseup', stopResizeItem);
         }
 
-        // Item dragging (moving position)
         function startDragItem(e) {
             draggedItem = this;
-            const itemIndex = parseInt(draggedItem.dataset.itemIndex);
+            const visualType = draggedItem.dataset.visualType || 'item';
 
-            // Select the item (sem re-renderizar)
-            selectItem(itemIndex);
+            if (visualType === 'item') {
+                const index = parseInt(draggedItem.dataset.itemIndex);
+                if (!Number.isNaN(index)) {
+                    selectItem(index);
+                }
+            } else if (visualType === 'puzzle') {
+                selectPuzzleVisual();
+            }
 
             const container = document.getElementById('visual-items-container');
             const rect = container.getBoundingClientRect();
 
-            // Calcular posição atual em % já considerando transform translate(-50%, -50%)
             const currentLeft = parseFloat(draggedItem.style.left);
             const currentTop = parseFloat(draggedItem.style.top);
 
-            // Converter % para pixels
             const currentLeftPx = (currentLeft / 100) * rect.width;
             const currentTopPx = (currentTop / 100) * rect.height;
 
-            // Offset é a diferença entre onde clicamos e o centro do item
             dragOffsetX = e.clientX - rect.left - currentLeftPx;
             dragOffsetY = e.clientY - rect.top - currentTopPx;
 
@@ -1731,21 +1968,17 @@
         }
 
         function selectItem(itemIndex) {
+            selectedVisualType = 'item';
             selectedItemIndex = itemIndex;
             renderTransformControls();
-            // NÃO re-renderizar aqui! Isso destrói o elemento durante o drag
+            highlightSelectedVisual();
+        }
 
-            // Apenas atualizar visualmente a seleção
-            const container = document.getElementById('visual-items-container');
-            const items = container.children;
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                if (parseInt(item.dataset.itemIndex) === itemIndex) {
-                    item.style.boxShadow = '0 0 0 3px #667eea';
-                } else {
-                    item.style.boxShadow = 'none';
-                }
-            }
+        function selectPuzzleVisual() {
+            selectedVisualType = 'puzzle';
+            selectedItemIndex = null;
+            renderTransformControls();
+            highlightSelectedVisual();
         }
 
         function dragItem(e) {
@@ -1754,11 +1987,9 @@
             const container = document.getElementById('visual-items-container');
             const rect = container.getBoundingClientRect();
 
-            // Calculate position as percentage
             let x = ((e.clientX - rect.left - dragOffsetX) / rect.width) * 100;
             let y = ((e.clientY - rect.top - dragOffsetY) / rect.height) * 100;
 
-            // Clamp to bounds
             x = Math.max(0, Math.min(100, x));
             y = Math.max(0, Math.min(100, y));
 
@@ -1767,16 +1998,23 @@
         }
 
         function stopDragItem(e) {
-            if (!draggedItem) return;
+            if (!draggedItem || !currentLocationId) return;
 
-            const itemIndex = parseInt(draggedItem.dataset.itemIndex);
+            const visualType = draggedItem.dataset.visualType || 'item';
             const location = gameLocations[currentLocationId];
+            const newX = parseFloat(draggedItem.style.left);
+            const newY = parseFloat(draggedItem.style.top);
 
-            // Save position
-            location.items[itemIndex].position = {
-                x: parseFloat(draggedItem.style.left),
-                y: parseFloat(draggedItem.style.top)
-            };
+            if (visualType === 'item') {
+                const index = parseInt(draggedItem.dataset.itemIndex);
+                if (!Number.isNaN(index) && location.items && location.items[index]) {
+                    ensureItemDefaults(location.items[index]);
+                    location.items[index].position = { x: newX, y: newY };
+                }
+            } else if (visualType === 'puzzle' && location.puzzle) {
+                ensurePuzzleDefaults(location.puzzle);
+                location.puzzle.visual.position = { x: newX, y: newY };
+            }
 
             autoSave();
             renderVisualItemsList();
@@ -2518,6 +2756,8 @@
                 if (puzzle.reward) {
                     document.getElementById('puzzle-reward-id').value = puzzle.reward.id || '';
                     document.getElementById('puzzle-reward-name').value = puzzle.reward.name || '';
+                    const rewardImageEl = document.getElementById('puzzle-reward-image');
+                    if (rewardImageEl) rewardImageEl.value = puzzle.reward.image || '';
                 }
             }, 100);
         }
@@ -2545,6 +2785,13 @@
                 delete location.puzzle;
                 autoSave();
                 showToast('✓ Enigma removido!');
+                if (selectedVisualType === 'puzzle') {
+                    selectedVisualType = null;
+                    selectedItemIndex = null;
+                    renderTransformControls();
+                    renderPositionedItems();
+                    renderVisualItemsList();
+                }
                 return;
             }
 
@@ -2583,13 +2830,26 @@
 
             const rewardId = document.getElementById('puzzle-reward-id').value;
             const rewardName = document.getElementById('puzzle-reward-name').value;
+            const rewardImage = document.getElementById('puzzle-reward-image').value;
             if (rewardId && rewardName) {
                 puzzle.reward = { id: rewardId, name: rewardName };
+                if (rewardImage) {
+                    puzzle.reward.image = rewardImage;
+                }
             }
 
+            const previousVisual = location.puzzle?.visual ? JSON.parse(JSON.stringify(location.puzzle.visual)) : null;
             location.puzzle = puzzle;
+            if (previousVisual) {
+                location.puzzle.visual = previousVisual;
+            } else {
+                ensurePuzzleDefaults(location.puzzle);
+            }
+
             autoSave();
             showToast('✓ Enigma salvo!');
+            renderVisualItemsList();
+            renderPositionedItems();
         }
 
         // Render items list
@@ -3159,6 +3419,11 @@ if (typeof module !== 'undefined' && module.exports) {
                         imageDimensions: { width: 1024, height: 1024 }
                     };
 
+                    if (loc.puzzle) {
+                        gameLocations[loc.id].puzzle = loc.puzzle;
+                        ensurePuzzleDefaults(gameLocations[loc.id].puzzle);
+                    }
+
                     locationOrder.push(loc.id);
                 });
 
@@ -3276,7 +3541,8 @@ if (typeof module !== 'undefined' && module.exports) {
                         name: loc.name,
                         description: loc.description || 'Descrição...',
                         background_image: loc.image || '',
-                        hotspots: allHotspots
+                        hotspots: allHotspots,
+                        puzzle: loc.puzzle || null
                     });
                 }
 

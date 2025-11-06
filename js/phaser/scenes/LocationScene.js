@@ -10,6 +10,10 @@ class LocationScene extends Phaser.Scene {
         this.locationData = null;
         this.hotspots = [];
         this.items = [];
+        this.puzzleSprite = null;
+        this.rewardSprite = null;
+        this.puzzleHitArea = null;
+        this.currentPuzzleData = null;
     }
 
     init(data) {
@@ -27,8 +31,13 @@ class LocationScene extends Phaser.Scene {
             console.error('Location not found:', this.currentLocation);
             return;
         }
+
+        uiManager.setActiveScene(this);
         // Renderizar background
         this.renderBackground();
+
+        // Renderizar enigma (se existir) antes de itens/hotspots
+        this.renderPuzzle();
 
         // Renderizar hotspots
         this.renderHotspots();
@@ -75,6 +84,18 @@ class LocationScene extends Phaser.Scene {
 
         this.hotspots = [];
         this.items = [];
+        this.puzzleHitArea = null;
+
+        if (this.puzzleSprite) {
+            this.puzzleSprite.destroy();
+            this.puzzleSprite = null;
+        }
+        if (this.rewardSprite) {
+            this.rewardSprite.destroy();
+            this.rewardSprite = null;
+        }
+
+        this.renderPuzzle();
 
         this.renderHotspots();
         this.renderItems();
@@ -160,6 +181,89 @@ class LocationScene extends Phaser.Scene {
                 }
             };
         }
+    }
+
+    renderPuzzle() {
+        if (this.puzzleSprite) {
+            this.puzzleSprite.destroy();
+            this.puzzleSprite = null;
+        }
+        if (this.rewardSprite) {
+            this.rewardSprite.destroy();
+            this.rewardSprite = null;
+        }
+        this.puzzleHitArea = null;
+        this.currentPuzzleData = this.locationData.puzzle || null;
+
+        const puzzle = this.locationData.puzzle;
+        if (!puzzle || !puzzle.visual) {
+            return;
+        }
+
+        const visual = puzzle.visual;
+        const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
+
+        const width = visual.size?.width || 120;
+        const height = visual.size?.height || 120;
+
+        const x = bgX + (visual.position.x / 100) * bgWidth;
+        const y = bgY + (visual.position.y / 100) * bgHeight;
+
+        const isSolved = gameStateManager.isPuzzleSolved(puzzle.id);
+        let textureKey = null;
+
+        if (isSolved && visual.afterImage) {
+            textureKey = `puzzle_${this.locationData.id}_after`;
+        } else if (!isSolved && visual.beforeImage) {
+            textureKey = `puzzle_${this.locationData.id}_before`;
+        }
+
+        if (textureKey && this.textures.exists(textureKey)) {
+            this.puzzleSprite = this.add.image(x, y, textureKey);
+            this.puzzleSprite.setDisplaySize(width, height);
+        } else {
+            this.puzzleSprite = this.add.rectangle(x, y, width, height, 0x8b4513, 0.65);
+            this.puzzleSprite.setStrokeStyle(2, 0xf0a500);
+        }
+
+        this.applyPuzzleTransforms(this.puzzleSprite, visual.transform);
+        this.puzzleSprite.setDepth(80);
+
+        this.puzzleHitArea = {
+            x: x - width / 2,
+            y: y - height / 2,
+            width,
+            height
+        };
+    }
+
+    applyPuzzleTransforms(sprite, transform = {}) {
+        if (!sprite) return;
+        sprite.setAngle(transform.rotation || 0);
+        const scaleX = (transform.scaleX || 1) * (transform.flipX ? -1 : 1);
+        const scaleY = (transform.scaleY || 1) * (transform.flipY ? -1 : 1);
+        sprite.setScale(scaleX, scaleY);
+        if (typeof transform.opacity === 'number') {
+            sprite.setAlpha(transform.opacity);
+        } else {
+            sprite.setAlpha(1);
+        }
+    }
+
+    flashPuzzleSprite(color = 0xf0a500) {
+        if (!this.puzzleSprite) return;
+        this.puzzleSprite.setTint(color);
+        this.time.delayedCall(200, () => {
+            if (this.puzzleSprite) {
+                this.puzzleSprite.clearTint();
+            }
+        });
+    }
+
+    isPointInsidePuzzle(px, py) {
+        if (!this.puzzleHitArea) return false;
+        const { x, y, width, height } = this.puzzleHitArea;
+        return px >= x && px <= x + width && py >= y && py <= y + height;
     }
 
     renderHotspots() {
@@ -425,7 +529,7 @@ class LocationScene extends Phaser.Scene {
                 break;
 
             case 'puzzle':
-                this.openPuzzle(hotspot.puzzleId);
+                this.promptPuzzleInteraction(hotspot.puzzleId || (this.locationData.puzzle?.id));
                 break;
 
             case 'collect':
@@ -439,6 +543,174 @@ class LocationScene extends Phaser.Scene {
                 uiManager.showNotification('Nada de interessante aqui...');
                 break;
         }
+    }
+
+    promptPuzzleInteraction(puzzleId) {
+        const puzzle = this.locationData.puzzle;
+        if (!puzzle || (puzzleId && puzzle.id !== puzzleId)) {
+            uiManager.showNotification('Nada acontece aqui...');
+            return;
+        }
+
+        if (gameStateManager.isPuzzleSolved(puzzle.id)) {
+            uiManager.showNotification('Este enigma já foi resolvido.');
+            return;
+        }
+
+        uiManager.showNotification('Arraste o item correto do inventário até o enigma.');
+        this.flashPuzzleSprite();
+    }
+
+    handleInventoryDrop(itemId, pointer) {
+        const puzzle = this.locationData.puzzle;
+        if (!puzzle || !this.puzzleHitArea) {
+            uiManager.showNotification('Este item não reage aqui.');
+            return;
+        }
+
+        if (!this.isPointInsidePuzzle(pointer.x, pointer.y)) {
+            uiManager.showNotification('Este item não reage aqui.');
+            return;
+        }
+
+        if (gameStateManager.isPuzzleSolved(puzzle.id)) {
+            uiManager.showNotification('O enigma já foi resolvido.');
+            return;
+        }
+
+        switch (puzzle.type) {
+            case 'item_combination':
+                this.handleItemCombinationPuzzle(puzzle, itemId);
+                break;
+            default:
+                uiManager.showNotification('Este enigma não aceita itens diretamente.', 2500);
+                this.flashPuzzleSprite(0xff6666);
+        }
+    }
+
+    handleItemCombinationPuzzle(puzzle, itemId) {
+        const required = (puzzle.requiredItems || []).map(id => id.trim()).filter(Boolean);
+        if (!required.length) {
+            uiManager.showNotification('Enigma sem itens configurados.', 2500);
+            return;
+        }
+
+        if (!required.includes(itemId)) {
+            uiManager.showNotification('Este item não parece encaixar aqui.', 2500);
+            this.flashPuzzleSprite(0xff6666);
+            return;
+        }
+
+        const missing = required.filter(id => !gameStateManager.isItemCollected(id));
+        if (missing.length > 0) {
+            uiManager.showNotification('Você ainda precisa reunir todos os itens corretos.', 2500);
+            this.flashPuzzleSprite(0xffc107);
+            return;
+        }
+
+        this.solveCurrentPuzzle(puzzle);
+    }
+
+    solveCurrentPuzzle(puzzle) {
+        if (!puzzle) return;
+        const reward = puzzle.reward ? { ...puzzle.reward } : null;
+        if (reward && !reward.image) {
+            reward.image = `images/items/${reward.id}.png`;
+        }
+
+        const solved = gameStateManager.solvePuzzle(puzzle.id, reward);
+        if (!solved) {
+            uiManager.showNotification('Este enigma já foi resolvido.');
+            return;
+        }
+
+        this.flashPuzzleSprite(0x6fff9b);
+        this.updatePuzzleVisual(true);
+
+        uiManager.showNotification('✓ Enigma resolvido!');
+
+        if (reward) {
+            this.spawnPuzzleReward(puzzle, reward);
+        }
+
+        uiManager.renderInventory();
+    }
+
+    updatePuzzleVisual(isSolved) {
+        if (!this.puzzleSprite || !this.locationData.puzzle) return;
+        const visual = this.locationData.puzzle.visual;
+        let textureKey = null;
+
+        if (isSolved && visual.afterImage) {
+            textureKey = `puzzle_${this.locationData.id}_after`;
+        } else if (!isSolved && visual.beforeImage) {
+            textureKey = `puzzle_${this.locationData.id}_before`;
+        }
+
+        if (textureKey && this.textures.exists(textureKey)) {
+            this.puzzleSprite.setTexture(textureKey);
+            this.puzzleSprite.setDisplaySize(visual.size?.width || this.puzzleSprite.displayWidth, visual.size?.height || this.puzzleSprite.displayHeight);
+        }
+
+        this.applyPuzzleTransforms(this.puzzleSprite, visual.transform);
+    }
+
+    spawnPuzzleReward(puzzle, reward) {
+        if (!reward) return;
+
+        const { bgWidth, bgHeight, bgX, bgY } = this.getBackgroundBounds();
+        const visual = puzzle.visual;
+        const baseWidth = visual.size?.width || 120;
+        const baseHeight = visual.size?.height || 120;
+
+        const x = bgX + (visual.position.x / 100) * bgWidth;
+        const y = bgY + (visual.position.y / 100) * bgHeight - baseHeight * 0.6;
+
+        const textureKey = `puzzle_reward_${reward.id}`;
+        if (this.rewardSprite) {
+            this.rewardSprite.destroy();
+        }
+
+        if (this.textures.exists(textureKey)) {
+            this.rewardSprite = this.add.image(x, y, textureKey);
+            this.rewardSprite.setDisplaySize(baseWidth * 0.7, baseHeight * 0.7);
+        } else {
+            this.rewardSprite = this.add.text(x, y, reward.name || 'Recompensa', {
+                fontSize: '24px',
+                color: '#f0a500',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                padding: { x: 12, y: 8 }
+            });
+            this.rewardSprite.setOrigin(0.5);
+        }
+
+        this.rewardSprite.setDepth(200);
+        this.rewardSprite.setAlpha(0);
+
+        this.tweens.add({
+            targets: this.rewardSprite,
+            y: this.rewardSprite.y - 20,
+            alpha: 1,
+            duration: 400,
+            ease: 'Power2'
+        });
+
+        this.time.delayedCall(3000, () => {
+            if (!this.rewardSprite) return;
+            this.tweens.add({
+                targets: this.rewardSprite,
+                alpha: 0,
+                y: this.rewardSprite.y - 20,
+                duration: 400,
+                ease: 'Power2',
+                onComplete: () => {
+                    if (this.rewardSprite) {
+                        this.rewardSprite.destroy();
+                        this.rewardSprite = null;
+                    }
+                }
+            });
+        });
     }
 
     navigateToLocation(targetLocationId, hotspot) {
@@ -505,6 +777,7 @@ class LocationScene extends Phaser.Scene {
 
         if (collected) {
             uiManager.showNotification(`✓ Você pegou: ${item.name}`);
+            uiManager.renderInventory();
 
             // Animação de coleta
             if (element) {
@@ -525,14 +798,24 @@ class LocationScene extends Phaser.Scene {
     }
 
     openPuzzle(puzzleId) {
-        // TODO: Implementar sistema de puzzles
-        uiManager.showNotification('Sistema de puzzles em desenvolvimento');
+        this.promptPuzzleInteraction(puzzleId);
     }
 
     shutdown() {
         // Cleanup
         this.hotspots = [];
         this.items = [];
+        this.puzzleHitArea = null;
+        if (this.puzzleSprite) {
+            this.puzzleSprite.destroy();
+            this.puzzleSprite = null;
+        }
+        if (this.rewardSprite) {
+            this.rewardSprite.destroy();
+            this.rewardSprite = null;
+        }
+        this.currentPuzzleData = null;
+        uiManager.setActiveScene(null);
 
         // Remover listener de resize
         this.scale.off('resize', this.handleResize, this);

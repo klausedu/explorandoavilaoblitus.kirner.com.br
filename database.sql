@@ -95,6 +95,17 @@ CREATE TABLE IF NOT EXISTS items (
     INDEX idx_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Location Puzzles Table
+CREATE TABLE IF NOT EXISTS location_puzzles (
+    location_id VARCHAR(50) PRIMARY KEY,
+    puzzle_id VARCHAR(100) NOT NULL,
+    puzzle_data LONGTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    INDEX idx_puzzle_id (puzzle_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Connections Table (Explicit connections between locations)
 CREATE TABLE IF NOT EXISTS connections (
     id INT AUTO_INCREMENT PRIMARY KEY,

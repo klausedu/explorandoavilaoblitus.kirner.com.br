@@ -77,6 +77,10 @@ class DatabaseLoader {
             const hotspots = [];
             const items = [];
 
+            if (location.puzzle && location.puzzle.visual) {
+                location.puzzle.visual = this.normalizePuzzleVisual(location.puzzle.visual);
+            }
+
             (location.hotspots || []).forEach(h => {
                 if (h.type === 'item' && h.item_id) {
                     // Este é um item colecionável
@@ -123,9 +127,39 @@ class DatabaseLoader {
                 hotspots: this.convertHotspots(hotspots),  // Só hotspots de navegação
                 items: items  // Items separados
             };
+
+            if (location.puzzle) {
+                gameMap[location.id].puzzle = location.puzzle;
+            }
         }
 
         return gameMap;
+    }
+
+    normalizePuzzleVisual(visual) {
+        const normalized = { ...visual };
+        if (typeof normalized.beforeImage === 'undefined') normalized.beforeImage = '';
+        if (typeof normalized.afterImage === 'undefined') normalized.afterImage = '';
+        if (!normalized.position) normalized.position = { x: 50, y: 50 };
+        if (!normalized.size) normalized.size = { width: 120, height: 120 };
+        if (!normalized.transform) {
+            normalized.transform = {
+                rotation: 0,
+                rotateX: 0,
+                rotateY: 0,
+                scaleX: 1,
+                scaleY: 1,
+                skewX: 0,
+                skewY: 0,
+                flipX: false,
+                flipY: false,
+                opacity: 1,
+                shadowBlur: 0,
+                shadowOffsetX: 0,
+                shadowOffsetY: 0
+            };
+        }
+        return normalized;
     }
 
     /**

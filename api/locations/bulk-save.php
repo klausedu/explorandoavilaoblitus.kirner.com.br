@@ -41,6 +41,7 @@ try {
     $successCount = 0;
     $hotspotCount = 0;
     $itemCount = 0;
+    $puzzleCount = 0;
 
     // Prepared statements (reutilizáveis)
     $locationStmt = $pdo->prepare("
@@ -71,6 +72,20 @@ try {
             image = VALUES(image),
             type = VALUES(type),
             updated_at = CURRENT_TIMESTAMP
+    ");
+
+    $puzzleUpsertStmt = $pdo->prepare("
+        INSERT INTO location_puzzles (location_id, puzzle_id, puzzle_data)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            puzzle_id = VALUES(puzzle_id),
+            puzzle_data = VALUES(puzzle_data),
+            updated_at = CURRENT_TIMESTAMP
+    ");
+
+    $puzzleDeleteStmt = $pdo->prepare("
+        DELETE FROM location_puzzles
+        WHERE location_id = ?
     ");
 
     // Processar todas as localizações
@@ -157,20 +172,46 @@ try {
                 $hotspotCount++;
             }
         }
+
+        // Handle puzzle data
+        if (!empty($loc['puzzle'])) {
+            $puzzle = $loc['puzzle'];
+            $puzzleId = $puzzle['id'] ?? ($locationId . '_puzzle');
+
+            // Ensure we do not duplicate the id inside data if already there
+            $puzzleData = $puzzle;
+            $puzzleData['id'] = $puzzleId;
+
+            $encodedPuzzle = json_encode($puzzleData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($encodedPuzzle === false) {
+                throw new RuntimeException('Failed to encode puzzle data for location ' . $locationId . ': ' . json_last_error_msg());
+            }
+
+            $puzzleUpsertStmt->execute([
+                $locationId,
+                $puzzleId,
+                $encodedPuzzle
+            ]);
+            $puzzleCount++;
+        } else {
+            // Remove puzzle if not present in payload
+            $puzzleDeleteStmt->execute([$locationId]);
+        }
     }
 
     // Commit tudo de uma vez!
     $pdo->commit();
 
-    error_log("✅ BULK SAVE - Sucesso! $successCount localizações, $hotspotCount hotspots, $itemCount items");
+    error_log("✅ BULK SAVE - Sucesso! $successCount localizações, $hotspotCount hotspots, $itemCount items, $puzzleCount puzzles");
 
     sendResponse(true, [
         'locations' => $successCount,
         'hotspots' => $hotspotCount,
-        'items' => $itemCount
-    ], "Saved $successCount locations, $hotspotCount hotspots and $itemCount items successfully");
+        'items' => $itemCount,
+        'puzzles' => $puzzleCount
+    ], "Saved $successCount locations, $hotspotCount hotspots, $itemCount items e $puzzleCount enigmas com sucesso");
 
-} catch (PDOException $e) {
+} catch (Exception $e) {
     // Rollback em caso de erro
     $pdo->rollBack();
     error_log("❌ BULK SAVE - Erro: " . $e->getMessage());

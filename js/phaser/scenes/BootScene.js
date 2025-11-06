@@ -98,6 +98,9 @@ class BootScene extends Phaser.Scene {
 
         // Preload all item images
         this.preloadItemImages();
+
+        // Preload puzzle visuals
+        this.preloadPuzzleImages();
     }
 
     preloadLocationImages() {
@@ -128,6 +131,33 @@ class BootScene extends Phaser.Scene {
                         this.load.image('item_' + item.id, item.image);
                     }
                 });
+            }
+        });
+    }
+
+    preloadPuzzleImages() {
+        const gameMapData = databaseLoader.isLoaded() ? databaseLoader.gameMap : (typeof gameMap !== 'undefined' ? gameMap : {});
+
+        Object.keys(gameMapData).forEach(locationId => {
+            const location = gameMapData[locationId];
+            if (location.puzzle && location.puzzle.visual) {
+                const beforeImage = location.puzzle.visual.beforeImage;
+                const afterImage = location.puzzle.visual.afterImage;
+                if (beforeImage) {
+                    this.load.image(`puzzle_${locationId}_before`, beforeImage);
+                }
+                if (afterImage) {
+                    this.load.image(`puzzle_${locationId}_after`, afterImage);
+                }
+            }
+
+            const rewardId = location.puzzle?.reward?.id;
+            if (rewardId) {
+                let rewardImage = location.puzzle.reward.image;
+                if (!rewardImage) {
+                    rewardImage = `images/items/${rewardId}.png`;
+                }
+                this.load.image(`puzzle_reward_${rewardId}`, rewardImage);
             }
         });
     }

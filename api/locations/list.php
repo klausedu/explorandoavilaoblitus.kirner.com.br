@@ -63,6 +63,14 @@ try {
     $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     error_log("📋 LIST API - Encontradas " . count($locations) . " localizações no banco");
 
+    // Prepare puzzle statement
+    $puzzleStmt = $pdo->prepare("
+        SELECT puzzle_id, puzzle_data
+        FROM location_puzzles
+        WHERE location_id = ?
+        LIMIT 1
+    ");
+
     // For each location, get its hotspots
     foreach ($locations as &$location) {
         $hotspotStmt = $pdo->prepare("
@@ -111,6 +119,20 @@ try {
             // Parse interaction_data if present
             if ($hotspot['interaction_data']) {
                 $hotspot['interaction_data'] = json_decode($hotspot['interaction_data'], true);
+            }
+        }
+
+        // Load puzzle data if exists
+        $puzzleStmt->execute([$location['id']]);
+        $puzzleRow = $puzzleStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($puzzleRow) {
+            $puzzleData = json_decode($puzzleRow['puzzle_data'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($puzzleData)) {
+                $puzzleData['id'] = $puzzleRow['puzzle_id'];
+                $location['puzzle'] = $puzzleData;
+            } else {
+                error_log("⚠️ LIST API - Falha ao decodificar puzzle_data para location {$location['id']}: " . json_last_error_msg());
             }
         }
     }
