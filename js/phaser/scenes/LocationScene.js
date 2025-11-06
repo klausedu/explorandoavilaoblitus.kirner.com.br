@@ -229,11 +229,14 @@ class LocationScene extends Phaser.Scene {
         this.applyPuzzleTransforms(this.puzzleSprite, visual.transform);
         this.puzzleSprite.setDepth(80);
 
+        const displayWidth = this.puzzleSprite.displayWidth || width;
+        const displayHeight = this.puzzleSprite.displayHeight || height;
+
         this.puzzleHitArea = {
-            x: x - width / 2,
-            y: y - height / 2,
-            width,
-            height
+            x: this.puzzleSprite.x - displayWidth / 2,
+            y: this.puzzleSprite.y - displayHeight / 2,
+            width: displayWidth,
+            height: displayHeight
         };
     }
 
@@ -568,7 +571,11 @@ class LocationScene extends Phaser.Scene {
             return;
         }
 
-        if (!this.isPointInsidePuzzle(pointer.x, pointer.y)) {
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y, true);
+        const worldX = worldPoint.x;
+        const worldY = worldPoint.y;
+
+        if (!this.isPointInsidePuzzle(worldX, worldY)) {
             uiManager.showNotification('Este item não reage aqui.');
             return;
         }
@@ -653,6 +660,15 @@ class LocationScene extends Phaser.Scene {
         }
 
         this.applyPuzzleTransforms(this.puzzleSprite, visual.transform);
+
+        const displayWidth = this.puzzleSprite.displayWidth;
+        const displayHeight = this.puzzleSprite.displayHeight;
+        this.puzzleHitArea = {
+            x: this.puzzleSprite.x - displayWidth / 2,
+            y: this.puzzleSprite.y - displayHeight / 2,
+            width: displayWidth,
+            height: displayHeight
+        };
     }
 
     spawnPuzzleReward(puzzle, reward) {

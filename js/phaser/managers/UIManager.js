@@ -11,6 +11,7 @@ class UIManager {
         this.boundHandleInventoryDragMove = this.handleInventoryDragMove.bind(this);
         this.boundEndInventoryDrag = this.endInventoryDrag.bind(this);
         this.inventoryWasOpenOnDrag = false;
+        this.inventoryOverlay = null;
     }
 
     createUI() {
@@ -245,6 +246,7 @@ class UIManager {
             </div>
         `;
         container.appendChild(overlay);
+        this.inventoryOverlay = overlay;
     }
 
     createLocationInfo(container) {
@@ -295,7 +297,8 @@ class UIManager {
      * Toggle inventário
      */
     toggleInventory() {
-        const overlay = document.getElementById('inventory-overlay');
+        const overlay = this.inventoryOverlay || document.getElementById('inventory-overlay');
+        if (!overlay) return;
         const isActive = overlay.classList.contains('active');
 
         if (isActive) {
@@ -384,14 +387,14 @@ class UIManager {
         document.body.appendChild(this.dragPreview);
         this.updateDragPreviewPosition(event.clientX, event.clientY);
 
-        const overlay = document.getElementById('inventory-overlay');
-        this.inventoryWasOpenOnDrag = overlay && overlay.classList.contains('active');
-        if (this.inventoryWasOpenOnDrag) {
+        const overlay = this.inventoryOverlay || document.getElementById('inventory-overlay');
+        this.inventoryWasOpenOnDrag = !!(overlay && overlay.classList.contains('active'));
+        if (this.inventoryWasOpenOnDrag && overlay) {
             overlay.classList.remove('active');
         }
 
-        document.addEventListener('pointermove', this.boundHandleInventoryDragMove);
-        document.addEventListener('pointerup', this.boundEndInventoryDrag);
+        document.addEventListener('pointermove', this.boundHandleInventoryDragMove, { passive: false });
+        document.addEventListener('pointerup', this.boundEndInventoryDrag, { passive: false });
     }
 
     handleInventoryDragMove(event) {
@@ -416,6 +419,10 @@ class UIManager {
 
         this.draggedInventoryItem = null;
 
+        const overlay = this.inventoryOverlay || document.getElementById('inventory-overlay');
+        if (this.inventoryWasOpenOnDrag && overlay) {
+            overlay.classList.add('active');
+        }
         this.inventoryWasOpenOnDrag = false;
 
         if (!window.game || !game.canvas) return;
@@ -424,9 +431,13 @@ class UIManager {
             event.clientY >= rect.top && event.clientY <= rect.bottom;
 
         if (inside && this.activeScene && typeof this.activeScene.handleInventoryDrop === 'function') {
+            const canvasWidth = game.canvas.width;
+            const canvasHeight = game.canvas.height;
+            const normalizedX = (event.clientX - rect.left) * (canvasWidth / rect.width);
+            const normalizedY = (event.clientY - rect.top) * (canvasHeight / rect.height);
             const pointerPosition = {
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top
+                x: normalizedX,
+                y: normalizedY
             };
             this.activeScene.handleInventoryDrop(item.id, pointerPosition);
         }
